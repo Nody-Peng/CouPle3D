@@ -14,6 +14,8 @@ var eyes: Array[Node3D] = []
 var route_angle := 0.0
 var speed := 0.0
 var roaming := 1.3
+var low_detail := false
+var update_accum := 0.0
 
 func blob(parent: Node3D, p: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var mesh: MeshInstance3D = host._ball(parent,p,1.0,color)
@@ -28,6 +30,7 @@ func joint(parent: Node3D, p: Vector3) -> Node3D:
 
 func build(source: Node3D, species: String, start: Vector3, index: int) -> void:
 	host = source
+	low_detail = host.low_detail
 	kind = species
 	origin = start
 	position = start
@@ -140,6 +143,12 @@ func build(source: Node3D, species: String, start: Vector3, index: int) -> void:
 	set_process(true)
 
 func _process(delta: float) -> void:
+	if low_detail:
+		update_accum += delta
+		if update_accum < 0.1:
+			return
+		delta = update_accum
+		update_accum = 0.0
 	clock += delta
 	var cycle := fmod(clock+phase,13.0)
 	var moving := cycle<7.0

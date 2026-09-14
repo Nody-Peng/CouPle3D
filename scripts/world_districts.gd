@@ -21,9 +21,10 @@ func build(source: Node3D) -> void:
 	zoo()
 	city()
 	street_details()
-	for i in range(4):
-		npc(Vector3(-3,0,17-i*10),"約會旅人",LOOKS[i+3],Vector3(0,0,3))
-	call_deferred("prepare_navigation")
+	if not host.low_detail:
+		for i in range(4):
+			npc(Vector3(-3,0,17-i*10),"約會旅人",LOOKS[i+3],Vector3(0,0,3))
+		call_deferred("prepare_navigation")
 
 func ribbon(points: PackedVector3Array, width: float, color: Color) -> void:
 	var surface := SurfaceTool.new()
@@ -105,7 +106,8 @@ func zoo() -> void:
 		habitat(h)
 		habitat_details(h)
 	host._signpost(Vector3(60,0,10),"愛心環道 →  六種動物，六個小世界")
-	npc(Vector3(91,0,8),"米米 · 動物園嚮導","female-e",Vector3(3,0,0))
+	if not host.low_detail:
+		npc(Vector3(91,0,8),"米米 · 動物園嚮導","female-e",Vector3(3,0,0))
 	host._activity("guide_zoo","米米 · 動物園嚮導","歡迎來到心森愛心動物園！沿著愛心環道拜訪六個棲地，每天任選三種動物收集印章，就能獲得 30 金幣。",Vector3(91,0,11))
 	for p in [Vector3(63,0,14),Vector3(93,0,28),Vector3(118,0,33)]:
 		host._bench(p,0)
@@ -145,7 +147,8 @@ func habitat(h: Dictionary) -> void:
 		if i%3==0:
 			host._cylinder(host.world,a+Vector3(0,0.65,0),0.1,1.3,host.CREAM)
 			host._ball(host.world,a+Vector3(0,1.34,0),0.14,Color("d6a5a1"))
-	for i in range(3):
+	var animal_count := 1 if host.low_detail else 3
+	for i in range(animal_count):
 		var animal := Node3D.new()
 		animal.set_script(load("res://scripts/zoo_animal.gd"))
 		host.world.add_child(animal)
@@ -160,8 +163,9 @@ func habitat(h: Dictionary) -> void:
 			var rock: MeshInstance3D = host._ball(host.world,p+Vector3(-h.rx*0.6+i*h.rx*0.3,0.4,-h.rz*0.76),0.65,Color("e6e8df") if h.id=="penguin" else Color("969a89"))
 			rock.scale = Vector3(1,0.5+0.1*i,0.7)
 	elif h.id=="panda":
-		for i in range(15):
-			var q := p+Vector3(-6.5+i*0.87,0,-5.3+sin(i*2.1)*0.55)
+		var bamboo_count := 7 if host.low_detail else 15
+		for i in range(bamboo_count):
+			var q := p+Vector3(-6.5+i*(13.0/maxf(1,bamboo_count-1)),0,-5.3+sin(i*2.1)*0.55)
 			var height := 2.5+0.8*(1.0+sin(i*1.7))
 			host._cylinder(host.world,q+Vector3(0,height/2,0),0.065,height,Color("6d8e54"))
 			for joint in range(1,int(height/0.45)):
@@ -203,8 +207,9 @@ func city() -> void:
 		building.set_script(load("res://scripts/city_venues.gd"))
 		host.world.add_child(building)
 		building.build(host,p,"bank" if i==1 else ("shop" if i==0 else "home"))
-	for i in range(5):
-		npc(Vector3(-65-i*16,0,8 if i%2==0 else 1),["小悠","阿樂","花店店長","攝影師","散步旅人"][i],LOOKS[7+i],Vector3(5,0,0))
+	if not host.low_detail:
+		for i in range(5):
+			npc(Vector3(-65-i*16,0,8 if i%2==0 else 1),["小悠","阿樂","花店店長","攝影師","散步旅人"][i],LOOKS[7+i],Vector3(5,0,0))
 	host._activity("city_neighbor","小悠 · 城市散步","今天也要留一點時間給彼此！百貨可以買配件，銀行可以存共同金幣，生活選物能布置你們的家。",Vector3(-61,0,14))
 	for x in [-86,-112]:
 		if x==-112: host._bench(Vector3(x,0,14),0)

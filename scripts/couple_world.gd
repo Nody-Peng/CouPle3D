@@ -38,10 +38,16 @@ var sun: DirectionalLight3D
 var environment: Environment
 var font: Font = preload("res://assets/fonts/NotoSansTC.ttf")
 var web_session: Node
+var low_detail := false
 
 func _ready() -> void:
 	HUD.hide()
 	
+	low_detail = OS.has_feature("web")
+	if low_detail:
+		Engine.max_fps = 45
+		RenderingServer.viewport_set_msaa_3d(get_viewport().get_viewport_rid(), RenderingServer.VIEWPORT_MSAA_DISABLED)
+		RenderingServer.viewport_set_screen_space_aa(get_viewport().get_viewport_rid(), RenderingServer.VIEWPORT_SCREEN_SPACE_AA_DISABLED)
 	RenderingServer.set_default_clear_color(Color("bed8df"))
 	_setup_lighting()
 	_build_ui()
@@ -94,11 +100,14 @@ func _cylinder(parent: Node3D, pos: Vector3, radius: float, height: float, color
 	mesh.bottom_radius = radius
 	mesh.top_radius = radius if top < 0 else top
 	mesh.height = height
-	mesh.radial_segments = 24
+	mesh.radial_segments = 10 if low_detail else 24
 	return _mesh(parent, mesh, pos, color)
 
 func _ball(parent: Node3D, pos: Vector3, radius: float, color: Color) -> MeshInstance3D:
 	var mesh := SphereMesh.new()
+	if low_detail:
+		mesh.radial_segments = 8
+		mesh.rings = 4
 	mesh.radius = radius
 	mesh.height = radius * 2
 	return _mesh(parent, mesh, pos, color)
@@ -137,7 +146,7 @@ func _setup_lighting() -> void:
 	sun.rotation_degrees = Vector3(-48, -32, 0)
 	sun.light_color = Color("ffe1b6")
 	sun.light_energy = 0.6
-	sun.shadow_enabled = true
+	sun.shadow_enabled = not low_detail
 	add_child(sun)
 
 func _build(home: bool) -> void:
@@ -179,6 +188,9 @@ func _tree(pos: Vector3, color := Color("719e87")) -> void:
 	_round_barrier(pos+Vector3(0,1.2,0),0.45,2.4)
 	_cylinder(world, pos + Vector3(0,1,0), 0.18, 2.0, Color("8a7160"))
 	_ball(world, pos + Vector3(0,2.5,0), 1.2, color)
+	if low_detail:
+		_cylinder(world, pos + Vector3(0,0.12,0), 1.3, 0.24, CREAM)
+		return
 	_ball(world, pos + Vector3(0.55,3.2,0), 0.85, color.lightened(0.1))
 	for i in range(5):
 		var a := i*TAU/5+pos.x
@@ -806,7 +818,7 @@ func _flowerbed(pos: Vector3, size: Vector2) -> void:
 	_box(world,pos+Vector3(0,0.15,0),Vector3(size.x,0.3,size.y),CREAM)
 	_collider(pos+Vector3(0,1.5,0),Vector3(size.x,3.0,size.y))
 	_box(world,pos+Vector3(0,0.32,0),Vector3(size.x-0.15,0.1,size.y-0.15),Color("67896b"))
-	var count := maxi(3,int(size.x*size.y*1.2))
+	var count := maxi(2,int(size.x*size.y*(0.35 if low_detail else 1.2)))
 	for i in count:
 		var x := sin(i*17.3)*(size.x*0.42)
 		var z := cos(i*9.7)*(size.y*0.38)
@@ -852,8 +864,9 @@ func _string_lights(a: Vector3, b: Vector3) -> void:
 		_round_barrier(Vector3(p.x,1.5,p.z),0.14,3.0)
 		_beam(world,Vector3(p.x,0,p.z),p,0.08,INK)
 	var previous := a
-	for i in range(1,25):
-		var t := float(i)/24
+	var light_steps := 10 if low_detail else 24
+	for i in range(1,light_steps+1):
+		var t := float(i)/float(light_steps)
 		var p := a.lerp(b,t)-Vector3(0,sin(t*PI)*0.7,0)
 		_beam(world,previous,p,0.025,INK)
 		if i%2 == 0:
@@ -990,9 +1003,10 @@ func _rail_point(t: float) -> Vector3:
 	return Vector3(-3+cos(t)*46,4.8+sin(t*2)*1.2,-28+sin(t)*11)
 
 func _sky_train() -> void:
-	for i in range(96):
-		var a := TAU*i/96
-		var b := TAU*(i+1)/96
+	var rail_steps := 32 if low_detail else 96
+	for i in range(rail_steps):
+		var a := TAU*i/rail_steps
+		var b := TAU*(i+1)/rail_steps
 		var p := _rail_point(a)
 		var next := _rail_point(b)
 		var right := (next-p).normalized().cross(Vector3.UP)*0.38
