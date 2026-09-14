@@ -115,8 +115,9 @@ export class Store {
         }
         case 'avatar': {
           const avatar=data.avatar;need(avatar&&BASES.includes(avatar.base),'請選擇有效造型');
-          for(const slot of ['hat','glasses','bag'])need(avatar[slot]==='none'||(CATALOG_MAP[avatar[slot]]?.type===slot&&this.owns(id,avatar[slot])),'尚未擁有這個配件');
-          u.avatar={base:avatar.base,hat:avatar.hat,glasses:avatar.glasses,bag:avatar.bag};break;
+          avatar.outfit ??= 'none';
+          for(const slot of ['hat','glasses','bag','outfit'])need(avatar[slot]==='none'||(CATALOG_MAP[avatar[slot]]?.type===slot&&this.owns(id,avatar[slot])),'尚未擁有這個配件');
+          u.avatar={base:avatar.base,hat:avatar.hat,glasses:avatar.glasses,bag:avatar.bag,outfit:avatar.outfit};break;
         }
         case 'bank/deposit': {
           this.activeHome();need(integer(data.amount,1,100000),'請輸入正整數金額');need(u.coins>=data.amount,'個人金幣不足');

@@ -50,6 +50,8 @@ func apply_appearance(config: Dictionary) -> void:
 			break
 	if skeleton:
 		var head := _attach(skeleton,"head")
+		_build_outfit(skeleton, str(config.get("outfit", "none")))
+		_build_new_accessories(skeleton, head, config)
 		if config.get("hat") == "hat_beret":
 			_sphere(head,Vector3(0,0.39,0),Vector3(0.3,0.11,0.27),Color("d58088"))
 			_sphere(head,Vector3(0.04,0.49,0),Vector3(0.04,0.035,0.04),Color("b56571"))
@@ -115,6 +117,8 @@ func _box(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> void:
 
 func _sphere(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> void:
 	var mesh := SphereMesh.new()
+	mesh.radial_segments = 12
+	mesh.rings = 6
 	mesh.radius = 1
 	mesh.height = 2
 	_mesh(parent,mesh,pos,color).scale = size
@@ -204,3 +208,52 @@ func _process(delta: float) -> void:
 				skeleton.set_bone_pose_rotation(index,Quaternion(Vector3.UP,-side*1.1)*Quaternion(Vector3.BACK,-side*0.55))
 			else:
 				skeleton.set_bone_pose_rotation(index,Quaternion(Vector3.RIGHT,angle))
+
+# Garments follow the existing torso rig and leave the legs free for cycling.
+func _build_outfit(skeleton: Skeleton3D, outfit: String) -> void:
+	var palettes := {"outfit_cream":"ead9b9", "outfit_rose":"c87989", "outfit_sailor":"f1e9d8", "outfit_mint":"d9ceb4", "outfit_lilac":"a293bb", "outfit_cocoa":"92725e"}
+	if not palettes.has(outfit): return
+	var torso := _attach(skeleton, "torso")
+	var color := Color(palettes[outfit])
+	var trim := Color("f6ead5")
+	var garment := CylinderMesh.new()
+	garment.top_radius = 0.19
+	garment.bottom_radius = 0.21
+	garment.height = 0.23
+	garment.radial_segments = 12
+	_mesh(torso, garment, Vector3(0,0.065,0.012), color).scale.z = 0.83
+	for x in [-0.047,0.047]:
+		_box(torso,Vector3(x,0.16,0.16),Vector3(0.067,0.028,0.022),Color("526984") if outfit == "outfit_sailor" else trim)
+		_box(torso,Vector3(x,0.018,0.181),Vector3(0.048,0.036,0.012),color.lightened(0.15))
+	for y in [0.035,0.075,0.11]:
+		_sphere(torso,Vector3(0,y,0.183),Vector3(0.009,0.009,0.006),Color("d6b56f"))
+	if outfit == "outfit_mint":
+		_box(torso,Vector3(0,0.18,0.14),Vector3(0.20,0.044,0.085),Color("78aaa0"))
+		_box(torso,Vector3(0.055,0.082,0.188),Vector3(0.045,0.13,0.022),Color("78aaa0"))
+	if outfit in ["outfit_lilac","outfit_sailor"]:
+		_bow(torso,Vector3(0,0.116,0.193),Color("526984") if outfit == "outfit_sailor" else Color("f6ead5"),0.45)
+
+func _bow(parent: Node3D, pos: Vector3, color: Color, size: float) -> void:
+	for side in [-1,1]:
+		_sphere(parent,pos+Vector3(side*0.052*size,0,0),Vector3(0.058,0.038,0.02)*size,color)
+		_box(parent,pos+Vector3(side*0.035*size,-0.04*size,-0.005),Vector3(0.03,0.065,0.016)*size,color)
+	_sphere(parent,pos,Vector3(0.023,0.023,0.025)*size,color.lightened(0.15))
+
+func _build_new_accessories(skeleton: Skeleton3D, head: Node3D, config: Dictionary) -> void:
+	if config.get("hat") == "hat_bow":
+		_bow(head,Vector3(0.16,0.35,0.15),Color("c87989"),1.0)
+	if config.get("hat") == "hat_flower":
+		for i in range(7):
+			var angle := PI*float(i)/6.0
+			var center := Vector3(cos(angle)*0.2,0.34+sin(angle)*0.055,0.14)
+			_sphere(head,center+Vector3(0,-0.018,-0.01),Vector3(0.04,0.012,0.02),Color("78aaa0"))
+			for petal in range(5):
+				var a := TAU*float(petal)/5.0
+				_sphere(head,center+Vector3(cos(a)*0.023,sin(a)*0.023,0),Vector3(0.018,0.018,0.009),Color("fff3d9"))
+			_sphere(head,center+Vector3(0,0,0.008),Vector3(0.012,0.012,0.009),Color("d8b562"))
+	if config.get("bag") == "bag_satchel":
+		var torso := _attach(skeleton,"torso")
+		_tube(torso,Vector3(-0.08,0.15,0.14),Vector3(0.16,-0.015,0.14),0.009,Color("775b48"))
+		_box(torso,Vector3(0.16,-0.018,0.09),Vector3(0.12,0.10,0.08),Color("b58a64"))
+		_box(torso,Vector3(0.16,0.005,0.135),Vector3(0.125,0.045,0.015),Color("92725e"))
+		_sphere(torso,Vector3(0.16,-0.012,0.148),Vector3(0.012,0.012,0.006),Color("d8b562"))

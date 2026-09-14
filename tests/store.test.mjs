@@ -146,3 +146,17 @@ test('sunk ships reveal only fully hit cells and survive reconnect',t=>{
  assert.equal(g.enemyBoard,undefined);assert.equal(g.ownShots[0].sunk,false);
  assert.deepEqual(new Store(file).snapshot('a').game.enemySunk,[[0,1,2]]);
 });
+
+
+test('outfits enforce ownership, allow free starter, persist and remain compatible with old avatars',t=>{
+ const {store:s,file}=fixture(t);
+ const avatar={base:'female-c',hat:'none',glasses:'none',bag:'none',outfit:'outfit_rose'};
+ assert.throws(()=>s.command('a','avatar',{avatar}),/擁有/);
+ buy(s,'a','outfit_cream');assert.equal(s.state.users.a.coins,120);
+ buy(s,'a','outfit_rose');s.command('a','avatar',{avatar});
+ const restored=new Store(file);assert.equal(restored.snapshot('b').partner.avatar.outfit,'outfit_rose');
+ assert.throws(()=>restored.command('b','avatar',{avatar}),/擁有/);
+ assert.throws(()=>restored.command('a','avatar',{avatar:{...avatar,outfit:'hat_beret'}}),/擁有/);
+ const {outfit,...legacy}=avatar;restored.command('a','avatar',{avatar:legacy});
+ assert.equal(restored.state.users.a.avatar.outfit,'none');
+});

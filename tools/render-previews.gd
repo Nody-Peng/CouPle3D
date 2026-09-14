@@ -38,12 +38,12 @@ func run() -> void:
 		viewport.get_texture().get_image().save_png("res://web/previews/"+base+".png")
 	camera.size = 3.2
 	camera.look_at(Vector3(0,1.25,0))
-	for item in ["hat_beret","hat_bunny","glasses_round","bag_daypack"]:
-		var slot: String = "hat" if item.begins_with("hat") else ("bag" if item.begins_with("bag") else "glasses")
+	for item in ["hat_beret","hat_bunny","glasses_round","bag_daypack","hat_bow","hat_flower","bag_satchel","outfit_cream","outfit_rose","outfit_sailor","outfit_mint","outfit_lilac","outfit_cocoa"]:
+		var slot: String = "outfit" if item.begins_with("outfit") else "hat" if item.begins_with("hat") else ("bag" if item.begins_with("bag") else "glasses")
 		var appearance := {"base":"female-b","hat":"none","glasses":"none","bag":"none"}
 		appearance[slot] = item
 		avatar.apply_appearance(appearance)
-		avatar.rotation_degrees.y = 165 if slot=="bag" else -15
+		avatar.rotation_degrees.y = 165 if item=="bag_daypack" else -15
 		await create_timer(0.15).timeout
 		await RenderingServer.frame_post_draw
 		viewport.get_texture().get_image().save_png("res://web/previews/"+item+".png")
