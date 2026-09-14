@@ -1,0 +1,33 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/trivia_minigame.gd" id="1_script"]
+
+[node name="TriviaMinigame" type="CanvasLayer"]
+visible = false
+script = ExtResource("1_script")
+
+[node name="Panel" type="Panel" parent="."]
+offset_left = 300.0
+offset_top = 150.0
+offset_right = 750.0
+offset_bottom = 450.0
+
+[node name="VBox" type="VBoxContainer" parent="Panel"]
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 430.0
+offset_bottom = 280.0
+
+[node name="QuestionLabel" type="Label" parent="Panel/VBox"]
+theme_override_font_sizes/font_size = 22
+text = "問題"
+autowrap_mode = 2
+
+[node name="OptionsBox" type="VBoxContainer" parent="Panel/VBox"]
+custom_minimum_size = Vector2(0, 120)
+
+[node name="FeedbackLabel" type="Label" parent="Panel/VBox"]
+text = ""
+
+[node name="CloseButton" type="Button" parent="Panel/VBox"]
+text = "離開小遊戲"

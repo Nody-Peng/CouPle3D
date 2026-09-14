@@ -1,0 +1,596 @@
+[gd_scene load_steps=73 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/characters/kenney_mini-characters/Models/GLB format/character-female-a.glb" id="2_charmodel"]
+[ext_resource type="Script" path="res://scripts/movie_room.gd" id="3_movieroom"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Couch_Small1.obj" id="4_couch"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Houseplant_1.obj" id="5_plant"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Light_Floor1.obj" id="6_lamp"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Bookshelf.obj" id="7_bookshelf"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Carpet_Round.obj" id="8_rug"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Table_RoundSmall2.obj" id="9_coffeetable"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Window_Large1.obj" id="10_window"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Curtains_Double.obj" id="11_curtains"]
+[ext_resource type="Texture2D" path="res://assets/textures/floor_tile.png" id="13_floortex"]
+[ext_resource type="Texture2D" path="res://assets/textures/painting.jpg" id="14_painting"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Light_Chandelier.obj" id="15_chandelier"]
+
+[sub_resource type="BoxMesh" id="FloorMesh"]
+size = Vector3(19, 0.2, 14)
+
+[sub_resource type="StandardMaterial3D" id="FloorMat"]
+albedo_texture = ExtResource("13_floortex")
+uv1_scale = Vector3(19, 14, 1)
+
+[sub_resource type="BoxShape3D" id="FloorShape"]
+size = Vector3(19, 0.2, 14)
+
+[sub_resource type="CapsuleShape3D" id="PlayerShape"]
+radius = 0.35
+height = 1.5
+
+[sub_resource type="BoxMesh" id="NorthWallMesh"]
+size = Vector3(19, 3, 0.3)
+
+[sub_resource type="BoxShape3D" id="NorthWallShape"]
+size = Vector3(19, 3, 0.3)
+
+[sub_resource type="BoxMesh" id="WestWallMesh"]
+size = Vector3(0.3, 3, 14)
+
+[sub_resource type="BoxShape3D" id="WestWallShape"]
+size = Vector3(0.3, 3, 14)
+
+[sub_resource type="BoxShape3D" id="SouthWallShape"]
+size = Vector3(8, 3, 0.3)
+
+[sub_resource type="BoxShape3D" id="EastWallShape"]
+size = Vector3(0.3, 3, 14)
+
+[sub_resource type="StandardMaterial3D" id="WallMat"]
+albedo_color = Color(0.98, 0.92, 0.75, 1)
+
+[sub_resource type="StandardMaterial3D" id="CouchMat"]
+albedo_color = Color(0.95, 0.5, 0.55, 1)
+
+[sub_resource type="StandardMaterial3D" id="PlantMat"]
+albedo_color = Color(0.35, 0.75, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="RugMainMat"]
+albedo_color = Color(0.3, 0.65, 0.75, 1)
+
+[sub_resource type="StandardMaterial3D" id="RugTrimMat"]
+albedo_color = Color(0.9, 0.85, 0.72, 1)
+
+[sub_resource type="StandardMaterial3D" id="TableWoodMat"]
+albedo_color = Color(0.58, 0.4, 0.26, 1)
+
+[sub_resource type="BoxShape3D" id="ExitDoorShape"]
+size = Vector3(1.6, 2.2, 0.7)
+
+[sub_resource type="BoxMesh" id="TVFrameMesh"]
+size = Vector3(2.2, 1.3, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="TVFrameMat"]
+albedo_color = Color(0.12, 0.12, 0.14, 1)
+
+[sub_resource type="BoxMesh" id="TVScreenMesh"]
+size = Vector3(2.0, 1.1, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="TVScreenMat"]
+albedo_color = Color(0.6, 0.85, 1, 1)
+emission_enabled = true
+emission = Color(0.5, 0.8, 1, 1)
+emission_energy_multiplier = 1.2
+
+[sub_resource type="BoxMesh" id="TVStandMesh"]
+size = Vector3(2.4, 0.7, 0.5)
+
+[sub_resource type="StandardMaterial3D" id="TVStandMat"]
+albedo_color = Color(0.4, 0.28, 0.22, 1)
+
+[sub_resource type="BoxMesh" id="FrameMesh"]
+size = Vector3(0.7, 0.9, 0.08)
+
+[sub_resource type="StandardMaterial3D" id="FrameMat"]
+albedo_color = Color(0.35, 0.24, 0.18, 1)
+
+[sub_resource type="BoxMesh" id="CanvasMesh"]
+size = Vector3(0.55, 0.75, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="Canvas1Mat"]
+albedo_color = Color(0.9, 0.7, 0.75, 1)
+
+[sub_resource type="StandardMaterial3D" id="Canvas2Mat"]
+albedo_color = Color(0.7, 0.8, 0.9, 1)
+
+[sub_resource type="StandardMaterial3D" id="CurtainRodMat"]
+albedo_color = Color(0.75, 0.65, 0.35, 1)
+
+[sub_resource type="StandardMaterial3D" id="CurtainFabricMat"]
+albedo_color = Color(0.85, 0.65, 0.6, 1)
+
+[sub_resource type="BoxMesh" id="PhotoFrameMesh"]
+size = Vector3(0.72, 0.72, 0.08)
+
+[sub_resource type="BoxMesh" id="PhotoCanvasMesh"]
+size = Vector3(0.6, 0.6, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="PaintingMat"]
+albedo_texture = ExtResource("14_painting")
+
+[sub_resource type="BoxShape3D" id="CouchShape"]
+size = Vector3(2.09, 1.37, 1.63)
+
+[sub_resource type="BoxShape3D" id="CoffeeTableShape"]
+size = Vector3(1.07, 0.67, 1.07)
+
+[sub_resource type="BoxShape3D" id="BookshelfShape"]
+size = Vector3(0.93, 1.78, 0.3)
+
+[sub_resource type="BoxShape3D" id="TVStandShape"]
+size = Vector3(2.4, 0.7, 0.5)
+
+[sub_resource type="BoxMesh" id="SmallDoorFrameMeshZ"]
+size = Vector3(0.1, 1.95, 0.78)
+
+[sub_resource type="BoxMesh" id="SmallDoorFrameMeshX"]
+size = Vector3(0.78, 1.95, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="SmallDoorFrameMat"]
+albedo_color = Color(0.98, 0.92, 0.75, 1)
+
+[sub_resource type="BoxMesh" id="SmallDoorPanelMeshZ"]
+size = Vector3(0.05, 1.78, 0.58)
+
+[sub_resource type="BoxMesh" id="SmallDoorPanelMeshX"]
+size = Vector3(0.58, 1.78, 0.05)
+
+[sub_resource type="StandardMaterial3D" id="SmallDoorPanelMat"]
+albedo_color = Color(0.42, 0.27, 0.18, 1)
+
+[sub_resource type="BoxMesh" id="SmallDoorInsetMeshZ"]
+size = Vector3(0.02, 0.7, 0.4)
+
+[sub_resource type="BoxMesh" id="SmallDoorInsetMeshX"]
+size = Vector3(0.4, 0.7, 0.02)
+
+[sub_resource type="StandardMaterial3D" id="SmallDoorInsetMat"]
+albedo_color = Color(0.33, 0.21, 0.14, 1)
+
+[sub_resource type="SphereMesh" id="DoorKnobMesh"]
+radius = 0.035
+height = 0.07
+
+[sub_resource type="StandardMaterial3D" id="DoorKnobMat"]
+albedo_color = Color(0.85, 0.7, 0.35, 1)
+metallic = 0.6
+roughness = 0.3
+
+[sub_resource type="BoxShape3D" id="SmallDoorTriggerShape"]
+size = Vector3(0.8, 1.8, 0.7)
+
+[sub_resource type="TorusMesh" id="EntryRingMesh"]
+inner_radius = 0.34
+outer_radius = 0.44
+
+[sub_resource type="StandardMaterial3D" id="EntryRingMat"]
+albedo_color = Color(0.95, 0.8, 0.4, 0.45)
+transparency = 1
+emission_enabled = true
+emission = Color(0.9, 0.75, 0.3, 1)
+emission_energy_multiplier = 0.8
+
+[sub_resource type="BoxMesh" id="CrownMoldingNorthMesh"]
+size = Vector3(19, 0.15, 0.3)
+
+[sub_resource type="BoxMesh" id="CrownMoldingWestMesh"]
+size = Vector3(0.3, 0.15, 14)
+
+[sub_resource type="StandardMaterial3D" id="CrownMoldingMat"]
+albedo_color = Color(0.9, 0.78, 0.45, 1)
+metallic = 0.3
+roughness = 0.4
+
+[sub_resource type="StandardMaterial3D" id="ChandelierMat"]
+albedo_color = Color(0.85, 0.7, 0.35, 1)
+metallic = 0.7
+roughness = 0.25
+
+[sub_resource type="StandardMaterial3D" id="AccentChairMat"]
+albedo_color = Color(0.85, 0.78, 0.65, 1)
+
+[sub_resource type="BoxShape3D" id="AccentChairShape"]
+size = Vector3(1.45, 0.95, 1.13)
+
+[sub_resource type="Environment" id="RoomEnv"]
+background_mode = 1
+background_color = Color(0.85, 0.88, 0.92, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.98, 0.9, 1)
+ambient_light_energy = 0.7
+
+[node name="MovieRoom" type="Node3D"]
+script = ExtResource("3_movieroom")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("RoomEnv")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("FloorMesh")
+surface_material_override/0 = SubResource("FloorMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("FloorShape")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 5, 0)
+rotation_degrees = Vector3(-45, -30, 0)
+light_energy = 1.25
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(15, 15, 15)
+rotation_degrees = Vector3(-30, 45, 0)
+projection = 1
+size = 19
+current = true
+
+[node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
+script = ExtResource("1_script")
+position = Vector3(0, 1, 2.3)
+
+[node name="CharacterModel" parent="Player" instance=ExtResource("2_charmodel")]
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.9, 1.9, 1.9)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("PlayerShape")
+position = Vector3(0, 0.75, 0)
+
+[node name="Walls" type="Node3D" parent="."]
+
+[node name="NorthWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(0, 1.5, -7)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/NorthWall"]
+mesh = SubResource("NorthWallMesh")
+surface_material_override/0 = SubResource("WallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/NorthWall"]
+shape = SubResource("NorthWallShape")
+
+[node name="CrownMolding" type="MeshInstance3D" parent="Walls/NorthWall"]
+mesh = SubResource("CrownMoldingNorthMesh")
+surface_material_override/0 = SubResource("CrownMoldingMat")
+position = Vector3(0, 1.42, 0.2)
+
+[node name="WestWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(-9.5, 1.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WestWall"]
+mesh = SubResource("WestWallMesh")
+surface_material_override/0 = SubResource("WallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WestWall"]
+shape = SubResource("WestWallShape")
+
+[node name="CrownMolding" type="MeshInstance3D" parent="Walls/WestWall"]
+mesh = SubResource("CrownMoldingWestMesh")
+surface_material_override/0 = SubResource("CrownMoldingMat")
+position = Vector3(0.2, 1.42, 0)
+
+[node name="EastWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(9.5, 1.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/EastWall"]
+shape = SubResource("EastWallShape")
+
+[node name="SouthWallLeft" type="StaticBody3D" parent="Walls"]
+position = Vector3(-5.5, 1.5, 7)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWallLeft"]
+shape = SubResource("SouthWallShape")
+
+[node name="SouthWallRight" type="StaticBody3D" parent="Walls"]
+position = Vector3(5.5, 1.5, 7)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWallRight"]
+shape = SubResource("SouthWallShape")
+
+[node name="Furniture" type="Node3D" parent="."]
+
+[node name="TVFrame" type="MeshInstance3D" parent="Furniture"]
+mesh = SubResource("TVFrameMesh")
+surface_material_override/0 = SubResource("TVFrameMat")
+position = Vector3(0, 1.4, -6.85)
+
+[node name="TVScreen" type="MeshInstance3D" parent="Furniture"]
+mesh = SubResource("TVScreenMesh")
+surface_material_override/0 = SubResource("TVScreenMat")
+position = Vector3(0, 1.4, -6.79)
+
+[node name="TVStand" type="StaticBody3D" parent="Furniture"]
+position = Vector3(0, 0.35, -6.7)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/TVStand"]
+mesh = SubResource("TVStandMesh")
+surface_material_override/0 = SubResource("TVStandMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/TVStand"]
+shape = SubResource("TVStandShape")
+
+[node name="PictureFrame1" type="MeshInstance3D" parent="Furniture"]
+mesh = SubResource("PhotoFrameMesh")
+surface_material_override/0 = SubResource("FrameMat")
+position = Vector3(-3.2, 1.6, -6.85)
+
+[node name="Canvas1" type="MeshInstance3D" parent="Furniture"]
+mesh = SubResource("PhotoCanvasMesh")
+surface_material_override/0 = SubResource("PaintingMat")
+position = Vector3(-3.2, 1.6, -6.79)
+
+[node name="PictureFrame2" type="MeshInstance3D" parent="Furniture"]
+mesh = SubResource("FrameMesh")
+surface_material_override/0 = SubResource("FrameMat")
+position = Vector3(3.2, 1.6, -6.85)
+
+[node name="Canvas2" type="MeshInstance3D" parent="Furniture"]
+mesh = SubResource("CanvasMesh")
+surface_material_override/0 = SubResource("Canvas2Mat")
+position = Vector3(3.2, 1.6, -6.79)
+
+[node name="CoffeeTable" type="StaticBody3D" parent="Furniture"]
+position = Vector3(0, 0.1, -1.6)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/CoffeeTable"]
+mesh = ExtResource("9_coffeetable")
+scale = Vector3(0.55, 0.55, 0.55)
+surface_material_override/0 = SubResource("TableWoodMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/CoffeeTable"]
+shape = SubResource("CoffeeTableShape")
+position = Vector3(0, 0.335, 0)
+
+[node name="Rug" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("8_rug")
+position = Vector3(0, 0.11, -0.9)
+scale = Vector3(0.95, 0.95, 0.95)
+surface_material_override/0 = SubResource("RugMainMat")
+surface_material_override/1 = SubResource("RugTrimMat")
+
+[node name="Chandelier" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("15_chandelier")
+surface_material_override/0 = SubResource("ChandelierMat")
+position = Vector3(0, 2.9, -1.2)
+
+[node name="AccentChair" type="StaticBody3D" parent="Furniture"]
+position = Vector3(0, 0.1, -3.6)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/AccentChair"]
+mesh = ExtResource("4_couch")
+scale = Vector3(0.5, 0.5, 0.5)
+surface_material_override/0 = SubResource("AccentChairMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/AccentChair"]
+shape = SubResource("AccentChairShape")
+position = Vector3(0, 0.475, 0)
+
+[node name="Couch" type="StaticBody3D" parent="Furniture"]
+position = Vector3(0, 0.1, 0.6)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/Couch"]
+mesh = ExtResource("4_couch")
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(0.72, 0.72, 0.72)
+surface_material_override/0 = SubResource("CouchMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/Couch"]
+shape = SubResource("CouchShape")
+position = Vector3(0, 0.685, 0)
+
+[node name="Bookshelf" type="StaticBody3D" parent="Furniture"]
+position = Vector3(-8.8, 0.1, -2.7)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/Bookshelf"]
+mesh = ExtResource("7_bookshelf")
+scale = Vector3(0.4, 0.4, 0.4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/Bookshelf"]
+shape = SubResource("BookshelfShape")
+position = Vector3(0, 0.89, 0)
+
+[node name="Houseplant" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("5_plant")
+position = Vector3(-8.7, 0.1, 3.2)
+surface_material_override/2 = SubResource("PlantMat")
+
+[node name="FloorLamp" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("6_lamp")
+position = Vector3(3.2, 0.1, 0.8)
+scale = Vector3(1.35, 1.35, 1.35)
+
+[node name="Window" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("10_window")
+position = Vector3(-9.32, 0.65, 2.5)
+rotation_degrees = Vector3(0, 90, 0)
+
+[node name="Curtains" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("11_curtains")
+position = Vector3(-9.05, 0.1, 2.5)
+rotation_degrees = Vector3(0, 90, 0)
+scale = Vector3(0.65, 0.65, 0.65)
+surface_material_override/0 = SubResource("CurtainRodMat")
+surface_material_override/1 = SubResource("CurtainFabricMat")
+
+[node name="ExitDoor" type="Area3D" parent="."]
+position = Vector3(0, 1, 6.7)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoor"]
+shape = SubResource("ExitDoorShape")
+
+[node name="GameRoomDoorGroup" type="Node3D" parent="Furniture"]
+position = Vector3(-9.3, 0.9, -1.3)
+
+[node name="Frame" type="MeshInstance3D" parent="Furniture/GameRoomDoorGroup"]
+mesh = SubResource("SmallDoorFrameMeshZ")
+surface_material_override/0 = SubResource("SmallDoorFrameMat")
+
+[node name="Panel" type="MeshInstance3D" parent="Furniture/GameRoomDoorGroup"]
+mesh = SubResource("SmallDoorPanelMeshZ")
+surface_material_override/0 = SubResource("SmallDoorPanelMat")
+position = Vector3(0.03, 0, 0)
+
+[node name="Inset" type="MeshInstance3D" parent="Furniture/GameRoomDoorGroup"]
+mesh = SubResource("SmallDoorInsetMeshZ")
+surface_material_override/0 = SubResource("SmallDoorInsetMat")
+position = Vector3(0.05, 0.1, 0)
+
+[node name="Knob" type="MeshInstance3D" parent="Furniture/GameRoomDoorGroup"]
+mesh = SubResource("DoorKnobMesh")
+surface_material_override/0 = SubResource("DoorKnobMat")
+position = Vector3(0.06, -0.2, 0.2)
+
+[node name="GameRoomDoor" type="Area3D" parent="."]
+position = Vector3(-8.8, 0.9, -1.3)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GameRoomDoor"]
+shape = SubResource("SmallDoorTriggerShape")
+
+[node name="GameRoomEntryRing" type="MeshInstance3D" parent="."]
+mesh = SubResource("EntryRingMesh")
+surface_material_override/0 = SubResource("EntryRingMat")
+position = Vector3(-8.4, 0.12, -1.3)
+
+[node name="Label3D" type="Label3D" parent="GameRoomEntryRing"]
+billboard = 1
+position = Vector3(0, 1.2, 0)
+text = "遊戲間"
+font_size = 44
+pixel_size = 0.011
+outline_size = 8
+
+[node name="BedroomDoorGroup" type="Node3D" parent="Furniture"]
+position = Vector3(-9.3, 0.9, 0.6)
+
+[node name="Frame" type="MeshInstance3D" parent="Furniture/BedroomDoorGroup"]
+mesh = SubResource("SmallDoorFrameMeshZ")
+surface_material_override/0 = SubResource("SmallDoorFrameMat")
+
+[node name="Panel" type="MeshInstance3D" parent="Furniture/BedroomDoorGroup"]
+mesh = SubResource("SmallDoorPanelMeshZ")
+surface_material_override/0 = SubResource("SmallDoorPanelMat")
+position = Vector3(0.03, 0, 0)
+
+[node name="Inset" type="MeshInstance3D" parent="Furniture/BedroomDoorGroup"]
+mesh = SubResource("SmallDoorInsetMeshZ")
+surface_material_override/0 = SubResource("SmallDoorInsetMat")
+position = Vector3(0.05, 0.1, 0)
+
+[node name="Knob" type="MeshInstance3D" parent="Furniture/BedroomDoorGroup"]
+mesh = SubResource("DoorKnobMesh")
+surface_material_override/0 = SubResource("DoorKnobMat")
+position = Vector3(0.06, -0.2, 0.2)
+
+[node name="BedroomDoor" type="Area3D" parent="."]
+position = Vector3(-8.8, 0.9, 0.6)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BedroomDoor"]
+shape = SubResource("SmallDoorTriggerShape")
+
+[node name="BedroomEntryRing" type="MeshInstance3D" parent="."]
+mesh = SubResource("EntryRingMesh")
+surface_material_override/0 = SubResource("EntryRingMat")
+position = Vector3(-8.4, 0.12, 0.6)
+
+[node name="Label3D" type="Label3D" parent="BedroomEntryRing"]
+billboard = 1
+position = Vector3(0, 1.2, 0)
+text = "主臥室"
+font_size = 44
+pixel_size = 0.011
+outline_size = 8
+
+[node name="KitchenDoorGroup" type="Node3D" parent="Furniture"]
+position = Vector3(-5.0, 0.9, -6.85)
+
+[node name="Frame" type="MeshInstance3D" parent="Furniture/KitchenDoorGroup"]
+mesh = SubResource("SmallDoorFrameMeshX")
+surface_material_override/0 = SubResource("SmallDoorFrameMat")
+
+[node name="Panel" type="MeshInstance3D" parent="Furniture/KitchenDoorGroup"]
+mesh = SubResource("SmallDoorPanelMeshX")
+surface_material_override/0 = SubResource("SmallDoorPanelMat")
+position = Vector3(0, 0, 0.03)
+
+[node name="Inset" type="MeshInstance3D" parent="Furniture/KitchenDoorGroup"]
+mesh = SubResource("SmallDoorInsetMeshX")
+surface_material_override/0 = SubResource("SmallDoorInsetMat")
+position = Vector3(0, 0.1, 0.05)
+
+[node name="Knob" type="MeshInstance3D" parent="Furniture/KitchenDoorGroup"]
+mesh = SubResource("DoorKnobMesh")
+surface_material_override/0 = SubResource("DoorKnobMat")
+position = Vector3(0.2, -0.2, 0.06)
+
+[node name="KitchenDoor" type="Area3D" parent="."]
+position = Vector3(-5.0, 0.9, -6.35)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="KitchenDoor"]
+shape = SubResource("SmallDoorTriggerShape")
+
+[node name="KitchenEntryRing" type="MeshInstance3D" parent="."]
+mesh = SubResource("EntryRingMesh")
+surface_material_override/0 = SubResource("EntryRingMat")
+position = Vector3(-5.0, 0.12, -5.9)
+
+[node name="Label3D" type="Label3D" parent="KitchenEntryRing"]
+billboard = 1
+position = Vector3(0, 1.2, 0)
+text = "廚房"
+font_size = 44
+pixel_size = 0.011
+outline_size = 8
+
+[node name="BathroomDoorGroup" type="Node3D" parent="Furniture"]
+position = Vector3(5.0, 0.9, -6.85)
+
+[node name="Frame" type="MeshInstance3D" parent="Furniture/BathroomDoorGroup"]
+mesh = SubResource("SmallDoorFrameMeshX")
+surface_material_override/0 = SubResource("SmallDoorFrameMat")
+
+[node name="Panel" type="MeshInstance3D" parent="Furniture/BathroomDoorGroup"]
+mesh = SubResource("SmallDoorPanelMeshX")
+surface_material_override/0 = SubResource("SmallDoorPanelMat")
+position = Vector3(0, 0, 0.03)
+
+[node name="Inset" type="MeshInstance3D" parent="Furniture/BathroomDoorGroup"]
+mesh = SubResource("SmallDoorInsetMeshX")
+surface_material_override/0 = SubResource("SmallDoorInsetMat")
+position = Vector3(0, 0.1, 0.05)
+
+[node name="Knob" type="MeshInstance3D" parent="Furniture/BathroomDoorGroup"]
+mesh = SubResource("DoorKnobMesh")
+surface_material_override/0 = SubResource("DoorKnobMat")
+position = Vector3(-0.2, -0.2, 0.06)
+
+[node name="BathroomDoor" type="Area3D" parent="."]
+position = Vector3(5.0, 0.9, -6.35)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BathroomDoor"]
+shape = SubResource("SmallDoorTriggerShape")
+
+[node name="BathroomEntryRing" type="MeshInstance3D" parent="."]
+mesh = SubResource("EntryRingMesh")
+surface_material_override/0 = SubResource("EntryRingMat")
+position = Vector3(5.0, 0.12, -5.9)
+
+[node name="Label3D" type="Label3D" parent="BathroomEntryRing"]
+billboard = 1
+position = Vector3(0, 1.2, 0)
+text = "浴室"
+font_size = 44
+pixel_size = 0.011
+outline_size = 8

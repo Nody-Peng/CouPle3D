@@ -1,0 +1,215 @@
+[gd_scene load_steps=20 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/characters/kenney_mini-characters/Models/GLB format/character-female-a.glb" id="2_charmodel"]
+[ext_resource type="Script" path="res://scripts/foyer.gd" id="3_foyer"]
+[ext_resource type="Texture2D" path="res://assets/textures/floor_tile.png" id="4_floortex"]
+
+[sub_resource type="BoxMesh" id="FloorMesh"]
+size = Vector3(12, 0.2, 6)
+
+[sub_resource type="StandardMaterial3D" id="FloorMat"]
+albedo_texture = ExtResource("4_floortex")
+uv1_scale = Vector3(12, 6, 1)
+
+[sub_resource type="BoxShape3D" id="FloorShape"]
+size = Vector3(12, 0.2, 6)
+
+[sub_resource type="CapsuleShape3D" id="PlayerShape"]
+radius = 0.35
+height = 1.5
+
+[sub_resource type="BoxMesh" id="NorthWallMesh"]
+size = Vector3(12, 3, 0.3)
+
+[sub_resource type="BoxShape3D" id="NorthWallShape"]
+size = Vector3(12, 3, 0.3)
+
+[sub_resource type="BoxMesh" id="WestWallMesh"]
+size = Vector3(0.3, 3, 6)
+
+[sub_resource type="BoxShape3D" id="WestWallShape"]
+size = Vector3(0.3, 3, 6)
+
+[sub_resource type="BoxShape3D" id="EastWallShape"]
+size = Vector3(0.3, 3, 6)
+
+[sub_resource type="BoxShape3D" id="SouthWallShape"]
+size = Vector3(4.75, 3, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="WallMat"]
+albedo_color = Color(0.92, 0.9, 0.86, 1)
+
+[sub_resource type="BoxMesh" id="DoorMesh"]
+size = Vector3(1.2, 2, 0.1)
+
+[sub_resource type="StandardMaterial3D" id="DoorMat"]
+albedo_color = Color(0.4, 0.28, 0.22, 1)
+
+[sub_resource type="BoxShape3D" id="DoorTriggerShape"]
+size = Vector3(1.6, 2, 1.3)
+
+[sub_resource type="BoxShape3D" id="ExitDoorShape"]
+size = Vector3(2.5, 2.2, 1.5)
+
+[node name="Foyer" type="Node3D"]
+script = ExtResource("3_foyer")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("FloorMesh")
+surface_material_override/0 = SubResource("FloorMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("FloorShape")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 5, 0)
+rotation_degrees = Vector3(-45, -30, 0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(9, 9, 9)
+rotation_degrees = Vector3(-30, 45, 0)
+projection = 1
+size = 11
+current = true
+
+[node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
+script = ExtResource("1_script")
+position = Vector3(0, 1, 1.2)
+
+[node name="CharacterModel" parent="Player" instance=ExtResource("2_charmodel")]
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.9, 1.9, 1.9)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("PlayerShape")
+position = Vector3(0, 0.75, 0)
+
+[node name="Walls" type="Node3D" parent="."]
+
+[node name="NorthWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(0, 1.5, -3)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/NorthWall"]
+mesh = SubResource("NorthWallMesh")
+surface_material_override/0 = SubResource("WallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/NorthWall"]
+shape = SubResource("NorthWallShape")
+
+[node name="WestWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(-6, 1.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WestWall"]
+mesh = SubResource("WestWallMesh")
+surface_material_override/0 = SubResource("WallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WestWall"]
+shape = SubResource("WestWallShape")
+
+[node name="EastWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(6, 1.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/EastWall"]
+shape = SubResource("EastWallShape")
+
+[node name="SouthWallLeft" type="StaticBody3D" parent="Walls"]
+position = Vector3(-3.625, 1.5, 3)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWallLeft"]
+shape = SubResource("SouthWallShape")
+
+[node name="SouthWallRight" type="StaticBody3D" parent="Walls"]
+position = Vector3(3.625, 1.5, 3)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWallRight"]
+shape = SubResource("SouthWallShape")
+
+[node name="LivingRoomDoor" type="Area3D" parent="."]
+position = Vector3(-4, 1, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="LivingRoomDoor"]
+shape = SubResource("DoorTriggerShape")
+
+[node name="LivingRoomDoorMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("DoorMesh")
+surface_material_override/0 = SubResource("DoorMat")
+position = Vector3(-4, 1, -2.75)
+
+[node name="Label3D" type="Label3D" parent="LivingRoomDoorMesh"]
+position = Vector3(0, 1.3, 0)
+text = "客廳"
+font_size = 36
+
+[node name="GameRoomDoor" type="Area3D" parent="."]
+position = Vector3(-2, 1, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="GameRoomDoor"]
+shape = SubResource("DoorTriggerShape")
+
+[node name="GameRoomDoorMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("DoorMesh")
+surface_material_override/0 = SubResource("DoorMat")
+position = Vector3(-2, 1, -2.75)
+
+[node name="Label3D" type="Label3D" parent="GameRoomDoorMesh"]
+position = Vector3(0, 1.3, 0)
+text = "遊戲間"
+font_size = 36
+
+[node name="KitchenDoor" type="Area3D" parent="."]
+position = Vector3(0, 1, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="KitchenDoor"]
+shape = SubResource("DoorTriggerShape")
+
+[node name="KitchenDoorMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("DoorMesh")
+surface_material_override/0 = SubResource("DoorMat")
+position = Vector3(0, 1, -2.75)
+
+[node name="Label3D" type="Label3D" parent="KitchenDoorMesh"]
+position = Vector3(0, 1.3, 0)
+text = "廚房"
+font_size = 36
+
+[node name="BathroomDoor" type="Area3D" parent="."]
+position = Vector3(2, 1, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BathroomDoor"]
+shape = SubResource("DoorTriggerShape")
+
+[node name="BathroomDoorMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("DoorMesh")
+surface_material_override/0 = SubResource("DoorMat")
+position = Vector3(2, 1, -2.75)
+
+[node name="Label3D" type="Label3D" parent="BathroomDoorMesh"]
+position = Vector3(0, 1.3, 0)
+text = "浴室"
+font_size = 36
+
+[node name="BedroomDoor" type="Area3D" parent="."]
+position = Vector3(4, 1, -2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="BedroomDoor"]
+shape = SubResource("DoorTriggerShape")
+
+[node name="BedroomDoorMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("DoorMesh")
+surface_material_override/0 = SubResource("DoorMat")
+position = Vector3(4, 1, -2.75)
+
+[node name="Label3D" type="Label3D" parent="BedroomDoorMesh"]
+position = Vector3(0, 1.3, 0)
+text = "主臥室"
+font_size = 36
+
+[node name="ExitDoor" type="Area3D" parent="."]
+position = Vector3(0, 1, 2.7)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoor"]
+shape = SubResource("ExitDoorShape")

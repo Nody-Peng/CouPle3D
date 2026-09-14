@@ -1,0 +1,199 @@
+[gd_scene load_steps=26 format=3]
+
+[ext_resource type="Script" path="res://scripts/player.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://assets/characters/kenney_mini-characters/Models/GLB format/character-female-a.glb" id="2_charmodel"]
+[ext_resource type="Script" path="res://scripts/game_room.gd" id="3_gameroom"]
+[ext_resource type="PackedScene" path="res://scenes/TriviaMinigame.tscn" id="4_trivia"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Table_RoundSmall.obj" id="5_desk"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Chair_1.obj" id="6_chair"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Bookshelf.obj" id="7_bookshelf"]
+[ext_resource type="ArrayMesh" path="res://assets/furniture/quaternius_interior/OBJ/Light_Floor1.obj" id="8_lamp"]
+[ext_resource type="Texture2D" path="res://assets/textures/floor_tile.png" id="9_floortex"]
+
+[sub_resource type="BoxMesh" id="FloorMesh"]
+size = Vector3(8, 0.2, 7)
+
+[sub_resource type="StandardMaterial3D" id="FloorMat"]
+albedo_texture = ExtResource("9_floortex")
+uv1_scale = Vector3(8, 7, 1)
+
+[sub_resource type="BoxShape3D" id="FloorShape"]
+size = Vector3(8, 0.2, 7)
+
+[sub_resource type="CapsuleShape3D" id="PlayerShape"]
+radius = 0.35
+height = 1.5
+
+[sub_resource type="BoxMesh" id="NorthWallMesh"]
+size = Vector3(8, 3, 0.3)
+
+[sub_resource type="BoxShape3D" id="NorthWallShape"]
+size = Vector3(8, 3, 0.3)
+
+[sub_resource type="BoxMesh" id="WestWallMesh"]
+size = Vector3(0.3, 3, 7)
+
+[sub_resource type="BoxShape3D" id="WestWallShape"]
+size = Vector3(0.3, 3, 7)
+
+[sub_resource type="BoxShape3D" id="EastWallShape"]
+size = Vector3(0.3, 3, 7)
+
+[sub_resource type="BoxShape3D" id="SouthWallShape"]
+size = Vector3(2.75, 3, 0.3)
+
+[sub_resource type="StandardMaterial3D" id="WallMat"]
+albedo_color = Color(0.85, 0.88, 0.92, 1)
+
+[sub_resource type="BoxShape3D" id="ExitDoorShape"]
+size = Vector3(2.5, 2.2, 1.5)
+
+[sub_resource type="SphereShape3D" id="DeskTriggerShape"]
+radius = 1.6
+
+[sub_resource type="BoxShape3D" id="DeskShape"]
+size = Vector3(1.36, 0.8, 1.36)
+
+[sub_resource type="BoxShape3D" id="BookshelfShape"]
+size = Vector3(0.93, 1.78, 0.3)
+
+[sub_resource type="Environment" id="RoomEnv"]
+background_mode = 1
+background_color = Color(0.85, 0.88, 0.92, 1)
+ambient_light_source = 2
+ambient_light_color = Color(1, 0.98, 0.9, 1)
+ambient_light_energy = 0.7
+
+[node name="GameRoom" type="Node3D"]
+script = ExtResource("3_gameroom")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("RoomEnv")
+
+[node name="Floor" type="StaticBody3D" parent="."]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Floor"]
+mesh = SubResource("FloorMesh")
+surface_material_override/0 = SubResource("FloorMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Floor"]
+shape = SubResource("FloorShape")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+position = Vector3(0, 5, 0)
+rotation_degrees = Vector3(-45, -30, 0)
+light_energy = 1.25
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+position = Vector3(8, 8, 8)
+rotation_degrees = Vector3(-30, 45, 0)
+projection = 1
+size = 9
+current = true
+
+[node name="Player" type="CharacterBody3D" parent="." groups=["player"]]
+script = ExtResource("1_script")
+position = Vector3(0, 1, 1.5)
+
+[node name="CharacterModel" parent="Player" instance=ExtResource("2_charmodel")]
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(1.9, 1.9, 1.9)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Player"]
+shape = SubResource("PlayerShape")
+position = Vector3(0, 0.75, 0)
+
+[node name="Walls" type="Node3D" parent="."]
+
+[node name="NorthWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(0, 1.5, -3.5)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/NorthWall"]
+mesh = SubResource("NorthWallMesh")
+surface_material_override/0 = SubResource("WallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/NorthWall"]
+shape = SubResource("NorthWallShape")
+
+[node name="WestWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(-4, 1.5, 0)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Walls/WestWall"]
+mesh = SubResource("WestWallMesh")
+surface_material_override/0 = SubResource("WallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/WestWall"]
+shape = SubResource("WestWallShape")
+
+[node name="EastWall" type="StaticBody3D" parent="Walls"]
+position = Vector3(4, 1.5, 0)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/EastWall"]
+shape = SubResource("EastWallShape")
+
+[node name="SouthWallLeft" type="StaticBody3D" parent="Walls"]
+position = Vector3(-2.625, 1.5, 3.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWallLeft"]
+shape = SubResource("SouthWallShape")
+
+[node name="SouthWallRight" type="StaticBody3D" parent="Walls"]
+position = Vector3(2.625, 1.5, 3.5)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Walls/SouthWallRight"]
+shape = SubResource("SouthWallShape")
+
+[node name="Furniture" type="Node3D" parent="."]
+
+[node name="Desk" type="StaticBody3D" parent="Furniture"]
+position = Vector3(0, 0.1, -1)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/Desk"]
+mesh = ExtResource("5_desk")
+scale = Vector3(0.7, 0.7, 0.7)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/Desk"]
+shape = SubResource("DeskShape")
+position = Vector3(0, 0.4, 0)
+
+[node name="Chair1" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("6_chair")
+position = Vector3(0, 0.1, -1.8)
+scale = Vector3(0.5, 0.5, 0.5)
+
+[node name="Chair2" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("6_chair")
+position = Vector3(0, 0.1, -0.2)
+rotation_degrees = Vector3(0, 180, 0)
+scale = Vector3(0.5, 0.5, 0.5)
+
+[node name="Bookshelf" type="StaticBody3D" parent="Furniture"]
+position = Vector3(-3.6, 0.1, -2)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="Furniture/Bookshelf"]
+mesh = ExtResource("7_bookshelf")
+scale = Vector3(0.4, 0.4, 0.4)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Furniture/Bookshelf"]
+shape = SubResource("BookshelfShape")
+position = Vector3(0, 0.89, 0)
+
+[node name="FloorLamp" type="MeshInstance3D" parent="Furniture"]
+mesh = ExtResource("8_lamp")
+position = Vector3(3, 0.1, -2.8)
+scale = Vector3(0.9, 0.9, 0.9)
+
+[node name="DeskTrigger" type="Area3D" parent="."]
+position = Vector3(0, 1, -1)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="DeskTrigger"]
+shape = SubResource("DeskTriggerShape")
+
+[node name="ExitDoor" type="Area3D" parent="."]
+position = Vector3(0, 1, 3.2)
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="ExitDoor"]
+shape = SubResource("ExitDoorShape")
+
+[node name="TriviaMinigame" parent="." instance=ExtResource("4_trivia")]

@@ -1,0 +1,18 @@
+.godot/
+.runtime/
+server/data/
+export_templates/
+Godot_v4.7.2-stable_win64.exe/
+drive-download-*.zip
+
+# Large source asset packages that are not needed for the V1 web deploy.
+*.blend
+*.fbx
+*.gltf
+*.bin
+assets/characters/kenney_mini-characters.zip
+
+*.log
+*.tmp
+assets/quaternius_nature/
+assets/quaternius_buildings/

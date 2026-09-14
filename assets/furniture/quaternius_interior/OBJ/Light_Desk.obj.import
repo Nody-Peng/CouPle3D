@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://b4355mjllysf5"
+path="res://.godot/imported/Light_Desk.obj-69a0286e032c0e7b21e8e6da62e795ca.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Light_Desk.obj-69a0286e032c0e7b21e8e6da62e795ca.mesh"]
+
+source_file="res://assets/furniture/quaternius_interior/OBJ/Light_Desk.obj"
+dest_files=["res://.godot/imported/Light_Desk.obj-69a0286e032c0e7b21e8e6da62e795ca.mesh", "res://.godot/imported/Light_Desk.obj-69a0286e032c0e7b21e8e6da62e795ca.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false

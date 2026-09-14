@@ -1,0 +1,25 @@
+[remap]
+
+importer="wavefront_obj"
+importer_version=1
+type="Mesh"
+uid="uid://df1hm1dfkopwb"
+path="res://.godot/imported/Trashcan_Small2.obj-5add9cba39bfa0e87b68aa54ebd2b806.mesh"
+
+[deps]
+
+files=["res://.godot/imported/Trashcan_Small2.obj-5add9cba39bfa0e87b68aa54ebd2b806.mesh"]
+
+source_file="res://assets/furniture/quaternius_interior/OBJ/Trashcan_Small2.obj"
+dest_files=["res://.godot/imported/Trashcan_Small2.obj-5add9cba39bfa0e87b68aa54ebd2b806.mesh", "res://.godot/imported/Trashcan_Small2.obj-5add9cba39bfa0e87b68aa54ebd2b806.mesh"]
+
+[params]
+
+generate_tangents=true
+generate_lods=true
+generate_shadow_mesh=true
+generate_lightmap_uv2=false
+generate_lightmap_uv2_texel_size=0.2
+scale_mesh=Vector3(1, 1, 1)
+offset_mesh=Vector3(0, 0, 0)
+force_disable_mesh_compression=false
