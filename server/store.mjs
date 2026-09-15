@@ -11,19 +11,41 @@ const integer = (v,min,max) => Number.isInteger(v) && v>=min && v<=max;
 export const other = id => id==='a' ? 'b' : 'a';
 const day = ms => new Date(ms+8*3600000).toISOString().slice(0,10);
 const BANK_APPROVAL_THRESHOLD=80,GIFT_DAILY_LIMIT=50,GOAL_CATEGORIES=['furniture','house','date','collection','other'];
+
+const DESSERT_CARDS={
+  whisk:{id:'whisk',name:'雲朵攪拌',type:'cook',tags:['prep','cream'],quality:9,personal:4,harmony:2,icon:'🥣',description:'打出綿密奶油，穩穩提高甜點品質。'},
+  bake:{id:'bake',name:'暖爐烘烤',type:'cook',tags:['heat','cake'],quality:11,personal:3,harmony:1,icon:'🔥',description:'掌握火候，讓蛋糕香氣上升。'},
+  decorate:{id:'decorate',name:'糖霜裝飾',type:'cook',tags:['finish','cute'],quality:8,personal:5,harmony:3,icon:'🍓',description:'補上草莓、糖霜與愛心擺盤。'},
+  teamwork:{id:'teamwork',name:'默契分工',type:'support',tags:['sync','prep','finish'],quality:6,personal:2,harmony:13,icon:'🤝',description:'幫對方接手，適合接任何料理動作。'},
+  prank:{id:'prank',name:'麵粉惡作劇',type:'prank',tags:['chaos'],quality:-5,personal:12,harmony:-2,icon:'💨',description:'成功會拿高分，但會讓廚房變混亂。'},
+  guard:{id:'guard',name:'圍裙防守',type:'guard',tags:['safe','sync'],quality:3,personal:3,harmony:5,icon:'🛡️',description:'擋下惡作劇，還能漂亮反制。'},
+  rescue:{id:'rescue',name:'補救秘方',type:'support',tags:['safe','cream'],quality:7,personal:2,harmony:7,icon:'✨',description:'修復失誤，降低混亂並增加默契。'}
+};
+const DESSERT_ORDERS=[
+  {name:'草莓雲朵鬆餅',hint:'先把奶油打蓬鬆',tags:['prep','cream']},
+  {name:'暖心焦糖布丁',hint:'火候剛剛好最重要',tags:['heat']},
+  {name:'愛心莓果蛋糕',hint:'漂亮裝飾會大加分',tags:['finish','cute']},
+  {name:'雙人午後套餐',hint:'默契分工能做得更快',tags:['sync']},
+  {name:'抹茶小山塔',hint:'補救秘方能穩住口感',tags:['safe','cream']},
+  {name:'星星奶油派',hint:'烘烤後接裝飾最亮眼',tags:['heat','finish']},
+  {name:'粉紅紀念日蛋糕',hint:'可愛擺盤和合作都很重要',tags:['cute','sync']},
+  {name:'心動招牌甜點',hint:'把品質、默契和小搗蛋平衡好',tags:['prep','heat','finish','sync']}
+];
+const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
 const inkCells = (cell, brush) => {
   const x=cell%7,y=Math.floor(cell/7),shape=brush==='splash'?[[0,0],[1,0],[-1,0],[0,1],[0,-1]]:brush==='heart'?[[0,0],[-1,-1],[1,-1],[-1,1],[1,1]]:[[0,0]];
   return shape.map(([dx,dy])=>({x:x+dx,y:y+dy})).filter(p=>p.x>=0&&p.x<7&&p.y>=0&&p.y<7).map(p=>p.y*7+p.x);
 };
 export function initialState() {
   const user = (name,base) => ({name,coins:120,avatar:{base,hat:'none',glasses:'none',bag:'none'},inventory:[],daily:{day:'',count:0},receipts:[]});
-  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[],goals:[],proposals:[],bankStats:{totalDeposited:0,goalsCompleted:0}},game:null,ink:null};
+  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[],goals:[],proposals:[],bankStats:{totalDeposited:0,goalsCompleted:0}},game:null,ink:null,dessert:null};
 }
 export class Store {
   constructor(file, options={}) {
     this.file=file; this.now=options.now || Date.now; this.state=fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,'utf8')) : initialState();
     need(this.state.version===1,'不支援的存檔版本',500);
     this.state.ink ??= null;
+    this.state.dessert ??= null;
     this.normalizeBank();
     this.presence={}; this.tasks={}; this.editLock=null;
     if(!fs.existsSync(file)) this.persist();
@@ -89,7 +111,7 @@ export class Store {
       sharedInventory:state.home.archived?[]:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner==='shared'),
       homeInventory:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner===id||x.owner==='shared'||state.home.layout.some(p=>p.instance===x.instance)),
       quiz:state.quiz?{id:state.quiz.id,answers:state.quiz.answers[id],partnerReady:!!state.quiz.answers[partner],results:state.quiz.answers.a&&state.quiz.answers.b?state.quiz.answers:null}:null,quizQuestions:QUIZ,
-      game,ink:this.inkSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
+      game,ink:this.inkSnapshot(id),dessert:this.dessertSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
   }
   inkSnapshot(id) {
     const g=this.state.ink;if(!g)return null;
@@ -97,6 +119,34 @@ export class Store {
     return {id:g.id,status:g.status,turn:g.turn,winner:g.winner,reason:g.reason,board:g.board,last:g.last,moves:g.moves.length,counts,
       used:g.used[id]||{splash:false,heart:false},partnerUsed:g.used[other(id)]||{splash:false,heart:false}};
   }
+  dessertSnapshot(id) {
+    const g=this.state.dessert;if(!g)return null;
+    const current=g.orders[Math.min(g.round-1,g.orders.length-1)]||g.orders.at(-1);
+    return {id:g.id,status:g.status,round:g.round,maxRounds:g.maxRounds,winner:g.winner,reason:g.reason,quality:g.quality,harmony:g.harmony,chaos:g.chaos,scores:g.scores,
+      current,orders:g.orders,log:g.log.slice(-8),memory:g.memory||null,rewards:g.rewards||null,cards:Object.values(DESSERT_CARDS),ownAction:g.actions[id],partnerReady:!!g.actions[other(id)]};
+  }
+  resolveDessert(g) {
+    const a=DESSERT_CARDS[g.actions.a],b=DESSERT_CARDS[g.actions.b];need(a&&b,'甜點行動格式錯誤');
+    const round=g.round,order=g.orders[round-1],score={a:a.personal,b:b.personal},delta={quality:a.quality+b.quality,harmony:a.harmony+b.harmony,chaos:0},events=[];
+    const match=(card)=>card.tags.some(t=>order.tags.includes(t));
+    for(const [pid,card] of [['a',a],['b',b]])if(match(card)){score[pid]+=4;delta.quality+=5;events.push(this.state.users[pid].name+' 抓到食譜提示：'+order.hint);}
+    if(a.type==='prank'&&b.type==='guard'){score.a=1;score.b+=9;delta.quality+=5;delta.harmony+=4;events.push(this.state.users.b.name+' 用圍裙接住麵粉，反制成功！');}
+    else if(b.type==='prank'&&a.type==='guard'){score.b=1;score.a+=9;delta.quality+=5;delta.harmony+=4;events.push(this.state.users.a.name+' 漂亮防守，廚房沒有爆炸。');}
+    else if(a.type==='prank'&&b.type==='prank'){score.a+=2;score.b+=2;delta.quality-=10;delta.chaos+=14;events.push('兩人同時惡作劇，麵粉雲像煙火一樣炸開。');}
+    else if(a.type==='prank'||b.type==='prank'){const p=a.type==='prank'?'a':'b',q=other(p);score[q]=Math.max(0,score[q]-2);delta.quality-=4;delta.chaos+=7;events.push(this.state.users[p].name+' 的小搗蛋成功，'+this.state.users[q].name+' 沾到一點奶油。');}
+    if(a.type==='cook'&&b.type==='cook'){delta.quality+=7;delta.harmony+=4;events.push('雙料理連擊，香氣直接飄滿廚房。');}
+    if((a.type==='support'&&b.type==='cook')||(b.type==='support'&&a.type==='cook')){delta.quality+=6;delta.harmony+=10;events.push('一人料理、一人支援，默契像翻食譜一樣順。');}
+    if(a.id==='rescue'||b.id==='rescue'){delta.chaos-=6;events.push('補救秘方把失誤變成可愛亮點。');}
+    if(a.id==='bake'&&b.id==='bake'){delta.quality-=6;delta.chaos+=5;events.push('兩人都顧烤箱，邊緣有一點點焦香。');}
+    g.scores.a+=Math.max(0,score.a);g.scores.b+=Math.max(0,score.b);g.quality=clamp(g.quality+delta.quality,0,100);g.harmony=clamp(g.harmony+delta.harmony,0,100);g.chaos=clamp(g.chaos+delta.chaos,0,60);
+    g.log.push({round,order:order.name,actions:{a:a.id,b:b.id},score,quality:g.quality,harmony:g.harmony,chaos:g.chaos,events:events.slice(0,3)});g.actions={a:null,b:null};
+    if(round>=g.maxRounds){const finalA=g.scores.a+Math.round(g.quality*.45)+Math.round(g.harmony*.35)-Math.round(g.chaos*.25),finalB=g.scores.b+Math.round(g.quality*.45)+Math.round(g.harmony*.35)-Math.round(g.chaos*.25);g.status='finished';g.reason='completed';g.winner=finalA===finalB?'draw':(finalA>finalB?'a':'b');
+      const grade=g.quality>=86?'S':g.quality>=72?'A':g.quality>=55?'B':'C',shared=clamp(Math.floor((g.quality+g.harmony-g.chaos)/8),6,24),baseA=24+Math.floor(g.scores.a/10),baseB=24+Math.floor(g.scores.b/10);
+      const rewards={a:baseA+(g.winner==='a'?8:g.winner==='draw'?4:0),b:baseB+(g.winner==='b'?8:g.winner==='draw'?4:0),shared};this.state.users.a.coins+=rewards.a;this.state.users.b.coins+=rewards.b;this.state.home.bank+=shared;this.state.home.bankStats.totalDeposited+=shared;this.log('a','甜點廚房共同獎勵：'+shared+' 金幣',shared,'game',{game:'dessert',dessert:g.id});
+      g.rewards=rewards;g.memory={title:order.name,grade,final:{a:finalA,b:finalB},text:'做出了 '+grade+' 級 '+order.name+'，甜點品質 '+g.quality+'，默契 '+g.harmony+'，廚房混亂 '+g.chaos+'。'};
+    } else g.round++;
+  }
+
   command(id,action,data={}) {
     need(['a','b'].includes(id),'請先登入',401);
     if(action==='position') {this.position(id,data);return;}
@@ -242,12 +292,22 @@ export class Store {
           break;
         }
         case 'ink/surrender': {const g=this.inkMatch(data);need(g.status!=='finished','對局已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
+
+        case 'dessert/new': {
+          this.activeHome();need(!this.state.dessert||this.state.dessert.status==='finished','已有進行中的甜點廚房');
+          this.state.dessert={id:crypto.randomUUID(),status:'playing',round:1,maxRounds:8,orders:DESSERT_ORDERS.map(o=>({...o})),actions:{a:null,b:null},scores:{a:0,b:0},quality:48,harmony:8,chaos:0,log:[],winner:null,reason:null,memory:null,rewards:null};break;
+        }
+        case 'dessert/play': {
+          const g=this.dessertMatch(data);need(g.status==='playing','甜點廚房已結束');need(!g.actions[id],'你已經選好本回合行動');need(DESSERT_CARDS[data.card],'甜點行動不存在');g.actions[id]=data.card;if(g.actions.a&&g.actions.b)this.resolveDessert(g);break;
+        }
+        case 'dessert/surrender': {const g=this.dessertMatch(data);need(g.status!=='finished','甜點廚房已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
         default: throw new GameError('不支援的操作',404);
       }
-    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','bank/gift':'送禮轉帳','bank/proposal/approve':'共同提案完成','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
+    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','bank/gift':'送禮轉帳','bank/proposal/approve':'共同提案完成','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','dessert/play':'甜點廚房完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
   }
   match(data) {const g=this.state.game;need(g&&g.id===data.gameId,'對局已更新，請重新整理');return g;}
   inkMatch(data) {const g=this.state.ink;need(g&&g.id===data.gameId,'墨水對局已更新，請重新整理');return g;}
+  dessertMatch(data) {const g=this.state.dessert;need(g&&g.id===data.gameId,'甜點廚房已更新，請重新整理');return g;}
   layoutCommand(id,action,data) {
     this.activeHome();const lock=this.liveLock();
     if(action==='layout/lock'){need(!lock||lock.user===id,'伴侶正在布置，請稍候',409);this.editLock={user:id,expires:this.now()+90000};return;}

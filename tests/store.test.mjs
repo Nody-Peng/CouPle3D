@@ -210,3 +210,37 @@ test('bank goals, gifts, withdrawal proposals and legacy migration work',t=>{
  const legacy=JSON.parse(fs.readFileSync(file,'utf8'));delete legacy.home.goals;delete legacy.home.proposals;delete legacy.home.bankStats;delete legacy.users.a.gifts;fs.writeFileSync(file,JSON.stringify(legacy));
  const migrated=new Store(file);assert.deepEqual(migrated.state.home.goals,[]);assert.equal(migrated.state.home.bankStats.totalDeposited,90);assert.equal(migrated.state.users.a.gifts.sent,0);
 });
+
+test('dessert kitchen resolves simultaneous cards, persists and rewards once',t=>{
+ const {store:s,file}=fixture(t);
+ s.command('a','dessert/new');const gameId=s.state.dessert.id;
+ assert.equal(s.snapshot('a').dessert.round,1);assert.equal(s.snapshot('a').dessert.cards.length,7);
+ s.command('a','dessert/play',{gameId,card:'prank'});
+ assert.equal(s.snapshot('a').dessert.ownAction,'prank');assert.equal(s.snapshot('b').dessert.partnerReady,true);
+ assert.throws(()=>s.command('a','dessert/play',{gameId,card:'bake'}),/已經選好/);
+ const restored=new Store(file);
+ restored.command('b','dessert/play',{gameId,card:'guard'});
+ assert.equal(restored.state.dessert.round,2);
+ assert.equal(restored.state.dessert.log[0].actions.a,'prank');
+ assert.ok(restored.state.dessert.scores.b>restored.state.dessert.scores.a);
+ const pairs=[['whisk','teamwork'],['bake','decorate'],['rescue','whisk'],['teamwork','bake'],['decorate','teamwork'],['guard','prank'],['bake','decorate']];
+ for(const [a,b] of pairs){restored.command('a','dessert/play',{gameId,card:a});restored.command('b','dessert/play',{gameId,card:b});}
+ assert.equal(restored.state.dessert.status,'finished');
+ assert.ok(['a','b','draw'].includes(restored.state.dessert.winner));
+ assert.ok(restored.state.dessert.memory.text.includes('做出了'));
+ const coins={a:restored.state.users.a.coins,b:restored.state.users.b.coins,bank:restored.state.home.bank};
+ assert.ok(coins.a>120&&coins.b>120&&coins.bank>=6);
+ assert.equal(restored.state.home.ledger[0].type,'game');
+ assert.throws(()=>restored.command('a','dessert/play',{gameId,card:'whisk'}),/已結束/);
+ assert.deepEqual({a:restored.state.users.a.coins,b:restored.state.users.b.coins,bank:restored.state.home.bank},coins);
+});
+
+test('dessert kitchen validates stale games and surrender gives no reward',t=>{
+ const {store:s}=fixture(t);
+ s.command('a','dessert/new');const gameId=s.state.dessert.id;
+ assert.throws(()=>s.command('a','dessert/play',{gameId,card:'unknown'}),/不存在/);
+ s.command('b','dessert/surrender',{gameId});
+ assert.equal(s.state.dessert.status,'finished');assert.equal(s.state.dessert.winner,'a');
+ assert.equal(s.state.users.a.coins,120);assert.equal(s.state.home.bank,0);
+ s.command('a','dessert/new');assert.throws(()=>s.command('a','dessert/play',{gameId,card:'whisk'}),/更新/);
+});
