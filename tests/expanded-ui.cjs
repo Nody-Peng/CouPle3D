@@ -18,7 +18,7 @@ const path=require('node:path');
  await pa.locator('#quiz-start').click();await pb.waitForSelector('#quiz-form');
  for(const p of [pa,pb]){for(let i=0;i<3;i++)await p.locator(`input[name="answer-${i}"][value="${i}"]`).check();await p.getByRole('button',{name:'保存我的答案'}).click();}
  await pa.locator('.wallet-hero strong').filter({hasText:'3 / 3'}).waitFor();await pa.screenshot({path:'screenshots/upgraded-quiz.png'});await pa.locator('#close-modal').click();
- await pa.evaluate(()=>window.togetherBridge.activity('city_bank','一起銀行',''));await pa.locator('#deposit-amount').waitFor();await pa.locator('#close-modal').click();
+ await pa.evaluate(()=>window.togetherBridge.activity('city_bank','一起銀行',''));await pa.locator('.bank-passbook').waitFor();await pa.locator('#close-modal').click();
  await pa.evaluate(()=>window.togetherBridge.activity('bank_atm','ATM',''));await pa.locator('.wallet-hero').waitFor();await pa.locator('#close-modal').click();
  await pa.evaluate(()=>window.togetherBridge.activity('city_fitting','穿搭鏡',''));await pa.locator('#save-avatar').waitFor();await pa.locator('#close-modal').click();
  await pa.evaluate(()=>window.togetherBridge.activity('city_furniture','家具目錄',''));await pa.locator('[data-buy="sofa_rose"]').waitFor();assert.equal(await pa.locator('[data-buy="hat_beret"]').count(),0);await pa.locator('#close-modal').click();

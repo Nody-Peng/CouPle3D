@@ -21,8 +21,9 @@ const assert=require('node:assert/strict');
     await pa.locator('#close-modal').click();await pa.getByRole('button',{name:'衣櫃',exact:true}).click();await pa.locator('[data-slot="hat"]').selectOption('hat_beret');await pa.locator('#save-avatar').click();
     await pa.waitForFunction(async()=>{const s=await(await fetch('/api/state')).json();return s.user.avatar.hat==='hat_beret';});await pa.screenshot({path:'screenshots/web-wardrobe.png'});
     await pa.locator('#close-modal').click();
-    for(const p of [pa,pb]){await p.getByRole('button',{name:'共同銀行',exact:true}).click();await p.locator('#deposit-amount').fill('60');await p.getByRole('button',{name:'存入共同銀行',exact:true}).click();await p.waitForTimeout(400);await p.locator('#close-modal').click();}
+    for(const p of [pa,pb]){await p.getByRole('button',{name:'共同銀行',exact:true}).click();await p.locator('#bank-deposit-form input[name="amount"]').fill('60');await p.getByRole('button',{name:'蓋章存入',exact:true}).click();await p.waitForTimeout(400);await p.locator('#close-modal').click();}
     await pa.getByRole('button',{name:'小商店',exact:true}).click();await pa.locator('#wallet').selectOption('shared');await pa.locator('[data-buy="sofa_rose"]').click();await pa.waitForTimeout(500);await pa.locator('#close-modal').click();
+    await pb.getByRole('button',{name:'共同銀行',exact:true}).click();await pb.getByRole('button',{name:'提案'}).click();await pb.getByRole('button',{name:'同意並蓋章'}).click();await pb.waitForTimeout(500);await pb.locator('#close-modal').click();
     await pa.getByRole('button',{name:'布置',exact:true}).click();await pa.locator('#start-edit').click();await pa.locator('[data-select]').first().click();
     const svg=pa.locator('#edit-map'),box=await svg.boundingBox();
     // Use the SVG transform, not an assumed CSS pixel-to-world ratio.

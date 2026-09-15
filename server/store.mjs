@@ -10,19 +10,21 @@ const need = (ok, message, status) => { if (!ok) throw new GameError(message,sta
 const integer = (v,min,max) => Number.isInteger(v) && v>=min && v<=max;
 export const other = id => id==='a' ? 'b' : 'a';
 const day = ms => new Date(ms+8*3600000).toISOString().slice(0,10);
+const BANK_APPROVAL_THRESHOLD=80,GIFT_DAILY_LIMIT=50,GOAL_CATEGORIES=['furniture','house','date','collection','other'];
 const inkCells = (cell, brush) => {
   const x=cell%7,y=Math.floor(cell/7),shape=brush==='splash'?[[0,0],[1,0],[-1,0],[0,1],[0,-1]]:brush==='heart'?[[0,0],[-1,-1],[1,-1],[-1,1],[1,1]]:[[0,0]];
   return shape.map(([dx,dy])=>({x:x+dx,y:y+dy})).filter(p=>p.x>=0&&p.x<7&&p.y>=0&&p.y<7).map(p=>p.y*7+p.x);
 };
 export function initialState() {
   const user = (name,base) => ({name,coins:120,avatar:{base,hat:'none',glasses:'none',bag:'none'},inventory:[],daily:{day:'',count:0},receipts:[]});
-  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[]},game:null,ink:null};
+  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[],goals:[],proposals:[],bankStats:{totalDeposited:0,goalsCompleted:0}},game:null,ink:null};
 }
 export class Store {
   constructor(file, options={}) {
     this.file=file; this.now=options.now || Date.now; this.state=fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,'utf8')) : initialState();
     need(this.state.version===1,'不支援的存檔版本',500);
     this.state.ink ??= null;
+    this.normalizeBank();
     this.presence={}; this.tasks={}; this.editLock=null;
     if(!fs.existsSync(file)) this.persist();
   }
@@ -38,9 +40,21 @@ export class Store {
     try { const result=fn(); for(const id of ['a','b']) {const u=this.state.users[id],amount=u.coins-old.users[id].coins;if(amount){u.ledger||=[];u.ledger.unshift({id:crypto.randomUUID(),at:this.now(),text:label,amount,balance:u.coins});u.ledger=u.ledger.slice(0,100);}} this.persist(); return result; } catch(e) {this.state=old;throw e;}
   }
   activeHome() { need(!this.state.home.archived,'共同住宅已封存，個人物品仍保留'); }
-  log(id,text,amount=0) {
-    this.state.home.ledger.unshift({id:crypto.randomUUID(),at:this.now(),user:id,text,amount});
-    this.state.home.ledger=this.state.home.ledger.slice(0,100);
+  normalizeBank() {
+    const h=this.state.home;h.goals ??=[];h.proposals ??=[];h.ledger ??=[];
+    if(!h.bankStats){const restoredDeposits=h.ledger.filter(e=>e.amount>0&&((e.type==='deposit')||String(e.text||'').includes('存入'))).reduce((n,e)=>n+e.amount,0);h.bankStats={totalDeposited:restoredDeposits,goalsCompleted:h.goals.filter(g=>g.status==='completed').length};}
+    h.bankStats.totalDeposited ??=0;h.bankStats.goalsCompleted ??=0;
+    for(const id of ['a','b']){const u=this.state.users[id];u.gifts ??={day:'',sent:0};u.ledger ??=[];}
+  }
+  log(id,text,amount=0,type='general',meta={}) {
+    this.state.home.ledger.unshift({id:crypto.randomUUID(),at:this.now(),user:id,text,amount,type,meta});
+    this.state.home.ledger=this.state.home.ledger.slice(0,140);
+  }
+  bankSnapshot(id) {
+    const h=this.state.home,stats=h.bankStats||{},completed=stats.goalsCompleted||0,total=stats.totalDeposited||0;
+    const score=total+completed*180,level=Math.max(1,Math.min(12,Math.floor(score/220)+1)),next=level>=12?score:(level*220);
+    const gift=this.state.users[id].gifts?.day===day(this.now())?this.state.users[id].gifts.sent:0;
+    return {goals:h.goals||[],proposals:h.proposals||[],stats:{totalDeposited:total,goalsCompleted:completed,score,level,next},gift:{sentToday:gift,limit:GIFT_DAILY_LIMIT},threshold:BANK_APPROVAL_THRESHOLD,categories:GOAL_CATEGORIES};
   }
   owns(id,item) {return this.state.users[id].inventory.some(x=>x.item===item);}
   liveLock() { if(this.editLock && this.editLock.expires<=this.now()) this.editLock=null;return this.editLock; }
@@ -75,7 +89,7 @@ export class Store {
       sharedInventory:state.home.archived?[]:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner==='shared'),
       homeInventory:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner===id||x.owner==='shared'||state.home.layout.some(p=>p.instance===x.instance)),
       quiz:state.quiz?{id:state.quiz.id,answers:state.quiz.answers[id],partnerReady:!!state.quiz.answers[partner],results:state.quiz.answers.a&&state.quiz.answers.b?state.quiz.answers:null}:null,quizQuestions:QUIZ,
-      game,ink:this.inkSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
+      game,ink:this.inkSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
   }
   inkSnapshot(id) {
     const g=this.state.ink;if(!g)return null;
@@ -132,7 +146,37 @@ export class Store {
         }
         case 'bank/deposit': {
           this.activeHome();need(integer(data.amount,1,100000),'請輸入正整數金額');need(u.coins>=data.amount,'個人金幣不足');
-          u.coins-=data.amount;h.bank+=data.amount;this.log(id,'存入共同銀行',data.amount);break;
+          let goal=null;if(data.goalId){goal=h.goals.find(g=>g.id===data.goalId);need(goal&&goal.status!=='completed','找不到共同目標');}
+          u.coins-=data.amount;h.bank+=data.amount;h.bankStats.totalDeposited+=data.amount;if(goal)goal.saved=Math.min(goal.target,goal.saved+data.amount);
+          this.log(id,goal?'存入目標：'+goal.title:'存入共同銀行',data.amount,'deposit',{goalId:goal?.id});break;
+        }
+        case 'bank/gift': {
+          need(integer(data.amount,1,GIFT_DAILY_LIMIT),'送禮金額需為 1–50 金幣');need(u.coins>=data.amount,'個人金幣不足');
+          const message=String(data.message||'').trim();need(message.length<=30&&!/[<>\x00-\x1f]/.test(message),'小紙條最多 30 字，且不能包含特殊標記');
+          if(u.gifts.day!==day(this.now()))u.gifts={day:day(this.now()),sent:0};need(u.gifts.sent+data.amount<=GIFT_DAILY_LIMIT,'今天送禮已達上限');
+          u.gifts.sent+=data.amount;u.coins-=data.amount;this.state.users[other(id)].coins+=data.amount;this.log(id,'送給伴侶的小禮物',0,'gift',{amount:data.amount,message});break;
+        }
+        case 'bank/goal/create': {
+          this.activeHome();const title=String(data.title||'').trim(),category=data.category||'other';
+          need(title.length>=1&&title.length<=16&&!/[<>\x00-\x1f]/.test(title),'目標名稱需為 1–16 字');need(GOAL_CATEGORIES.includes(category),'目標分類無效');need(integer(data.target,50,1000),'目標金額需為 50–1000');need(h.goals.filter(g=>g.status!=='completed').length<8,'最多同時建立 8 個未完成目標');
+          const goal={id:crypto.randomUUID(),title,category,target:data.target,saved:0,status:'active',createdBy:id,createdAt:this.now(),completedAt:null};h.goals.unshift(goal);this.log(id,'建立共同目標：'+title,0,'goal',{goalId:goal.id});break;
+        }
+        case 'bank/goal/complete': {
+          this.activeHome();const goal=h.goals.find(g=>g.id===data.goalId);need(goal&&goal.status!=='completed','找不到共同目標');need(goal.saved>=goal.target,'目標尚未達成');
+          goal.status='completed';goal.completedAt=this.now();h.bankStats.goalsCompleted++;this.log(id,'完成共同目標：'+goal.title,0,'goal',{goalId:goal.id});break;
+        }
+        case 'bank/proposal/withdraw': {
+          this.activeHome();need(integer(data.amount,1,100000),'提款金額需為正整數');need(h.bank>=data.amount,'共同銀行餘額不足');const note=String(data.note||'').trim();need(note.length<=30&&!/[<>\x00-\x1f]/.test(note),'提款備註最多 30 字');
+          const proposal={id:crypto.randomUUID(),type:'withdraw',status:'pending',createdBy:id,createdAt:this.now(),amount:data.amount,note};h.proposals.unshift(proposal);this.log(id,'提出提款申請',0,'proposal',{proposalId:proposal.id,amount:data.amount});break;
+        }
+        case 'bank/proposal/approve': {
+          this.activeHome();const p=h.proposals.find(p=>p.id===data.proposalId);need(p&&p.status==='pending','找不到待處理提案');need(p.createdBy!==id,'需要伴侶同意');
+          if(p.type==='withdraw'){need(h.bank>=p.amount,'共同銀行餘額不足');h.bank-=p.amount;this.state.users[p.createdBy].coins+=p.amount;this.log(id,'同意提款申請',-p.amount,'proposal',{proposalId:p.id});}
+          else if(p.type==='purchase'){const item=CATALOG_MAP[p.item];need(item?.type==='furniture','商品已無法共同購買');need(h.bank>=p.amount,'共同銀行餘額不足');h.bank-=p.amount;this.state.users[p.createdBy].inventory.push({instance:crypto.randomUUID(),item:item.id,owner:'shared',buyer:p.createdBy});this.log(id,'同意共同購買：'+item.name,-p.amount,'proposal',{proposalId:p.id,item:item.id});}
+          else throw new GameError('提案類型無效');p.status='approved';p.resolvedBy=id;p.resolvedAt=this.now();break;
+        }
+        case 'bank/proposal/cancel': {
+          const p=h.proposals.find(p=>p.id===data.proposalId);need(p&&p.status==='pending','找不到待處理提案');need(p.createdBy===id,'只能取消自己提出的提案');p.status='cancelled';p.resolvedBy=id;p.resolvedAt=this.now();this.log(id,'取消共同提案',0,'proposal',{proposalId:p.id});break;
         }
         case 'purchase': {
           need(typeof data.requestId==='string'&&data.requestId.length>=8&&data.requestId.length<=80,'缺少交易識別碼');
@@ -142,10 +186,13 @@ export class Store {
           const shared=data.wallet==='shared';if(shared){this.activeHome();need(item.type==='furniture','共同銀行只購買家具');}
           if(item.type!=='furniture')need(!this.owns(id,item.id),'已經擁有這個配件');
           need((shared?h.bank:u.coins)>=item.price,'金幣不足');
+          if(shared&&item.price>=BANK_APPROVAL_THRESHOLD){
+            const proposal={id:crypto.randomUUID(),type:'purchase',status:'pending',createdBy:id,createdAt:this.now(),amount:item.price,item:item.id,note:'共同購買'};h.proposals.unshift(proposal);u.receipts.push(data.requestId);this.log(id,'提出共同購買：'+item.name,0,'proposal',{proposalId:proposal.id,item:item.id,amount:item.price});break;
+          }
           if(shared)h.bank-=item.price;else u.coins-=item.price;
           u.inventory.push({instance:crypto.randomUUID(),item:item.id,owner:shared?'shared':id,buyer:id});
           u.receipts.push(data.requestId); // Persist idempotency keys: old successful requests never charge again.
-          if(shared)this.log(id,'共同購買：'+item.name,-item.price);break;
+          if(shared)this.log(id,'共同購買：'+item.name,-item.price,'spending',{item:item.id});break;
         }
         case 'home/archive': {
           this.activeHome();need(data.confirm==='ARCHIVE','請確認封存');h.archived=true;this.editLock=null;this.log(id,'封存共同住宅');break;
@@ -197,7 +244,7 @@ export class Store {
         case 'ink/surrender': {const g=this.inkMatch(data);need(g.status!=='finished','對局已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
         default: throw new GameError('不支援的操作',404);
       }
-    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
+    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','bank/gift':'送禮轉帳','bank/proposal/approve':'共同提案完成','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
   }
   match(data) {const g=this.state.game;need(g&&g.id===data.gameId,'對局已更新，請重新整理');return g;}
   inkMatch(data) {const g=this.state.ink;need(g&&g.id===data.gameId,'墨水對局已更新，請重新整理');return g;}

@@ -21,11 +21,16 @@ test('purchases, ownership, balance checks and permanent idempotency survive res
   const restored=new Store(file);assert.equal(restored.state.users.a.avatar.base,'male-b');
   buy(restored,'a','hat_beret','personal','stable-request');assert.equal(restored.state.users.a.coins,70);
 });
-test('bank is deposit-only and purchases only furniture with an audit trail',t=>{
+test('bank stores deposits, requires approval for large shared purchases, and keeps an audit trail',t=>{
   const {store:s}=fixture(t);s.command('a','bank/deposit',{amount:60});s.command('b','bank/deposit',{amount:60});
-  buy(s,'a','sofa_rose','shared');assert.equal(s.state.home.bank,10);assert.equal(s.state.home.ledger.length,3);
+  buy(s,'a','plant_leaf','shared');assert.equal(s.state.home.bank,85);
+  s.command('b','bank/deposit',{amount:30});
+  buy(s,'a','sofa_rose','shared','sofa-proposal');assert.equal(s.state.home.bank,115);assert.equal(s.state.home.proposals[0].type,'purchase');
+  assert.throws(()=>s.command('a','bank/proposal/approve',{proposalId:s.state.home.proposals[0].id}),/伴侶/);
+  s.command('b','bank/proposal/approve',{proposalId:s.state.home.proposals[0].id});
+  assert.equal(s.state.home.bank,5);assert.ok(s.state.users.a.inventory.some(i=>i.item==='sofa_rose'&&i.owner==='shared'));
   assert.throws(()=>s.command('b','bank/deposit',{amount:-1}));assert.throws(()=>s.command('b','bank/withdraw',{amount:5}));
-  assert.throws(()=>buy(s,'b','hat_beret','shared'),/家具/);assert.equal(s.state.home.bank,10);
+  assert.throws(()=>buy(s,'b','hat_beret','shared'),/家具/);
 });
 test('furniture lock, layout validation, shared visibility, revision and undo',t=>{
   const {store:s,tick}=fixture(t);buy(s,'a','sofa_rose');const instance=s.state.users.a.inventory[0].instance;
@@ -185,4 +190,23 @@ test('ink duel persists turns, limits special brushes, finishes with one reward'
  assert.equal(coins.a+coins.b,winner==='draw'?304:312);
  assert.throws(()=>restored.command(restored.state.ink.turn,'ink/paint',{gameId,cell:1,brush:'dot'}),/還沒輪到|對局已結束/);
  assert.deepEqual({a:restored.state.users.a.coins,b:restored.state.users.b.coins},coins);
+});
+
+
+test('bank goals, gifts, withdrawal proposals and legacy migration work',t=>{
+ const {store:s,file,tick}=fixture(t);
+ s.command('a','bank/goal/create',{title:'約會基金',category:'date',target:80});const goalId=s.state.home.goals[0].id;
+ assert.throws(()=>s.command('a','bank/goal/complete',{goalId}),/尚未達成/);
+ s.command('a','bank/deposit',{amount:50,goalId});s.command('b','bank/deposit',{amount:40,goalId});
+ assert.equal(s.state.home.bank,90);assert.equal(s.state.home.goals[0].saved,80);
+ s.command('b','bank/goal/complete',{goalId});assert.equal(s.state.home.bankStats.goalsCompleted,1);
+ s.command('a','bank/gift',{amount:30,message:'買杯咖啡'});assert.equal(s.state.users.a.coins,40);assert.equal(s.state.users.b.coins,110);
+ assert.throws(()=>s.command('a','bank/gift',{amount:21,message:'再一點'}),/上限/);
+ tick(86400000);s.command('a','bank/gift',{amount:40,message:'明天的小禮物'});
+ s.command('b','bank/proposal/withdraw',{amount:20,note:'買花'});const proposalId=s.state.home.proposals[0].id;
+ assert.throws(()=>s.command('b','bank/proposal/approve',{proposalId}),/伴侶/);
+ s.command('a','bank/proposal/approve',{proposalId});assert.equal(s.state.home.bank,70);assert.equal(s.state.users.b.coins,170);
+ const restored=new Store(file);assert.equal(restored.snapshot('a').bank.stats.goalsCompleted,1);assert.equal(restored.snapshot('a').bank.gift.limit,50);
+ const legacy=JSON.parse(fs.readFileSync(file,'utf8'));delete legacy.home.goals;delete legacy.home.proposals;delete legacy.home.bankStats;delete legacy.users.a.gifts;fs.writeFileSync(file,JSON.stringify(legacy));
+ const migrated=new Store(file);assert.deepEqual(migrated.state.home.goals,[]);assert.equal(migrated.state.home.bankStats.totalDeposited,90);assert.equal(migrated.state.users.a.gifts.sent,0);
 });
