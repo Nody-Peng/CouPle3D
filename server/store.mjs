@@ -10,14 +10,19 @@ const need = (ok, message, status) => { if (!ok) throw new GameError(message,sta
 const integer = (v,min,max) => Number.isInteger(v) && v>=min && v<=max;
 export const other = id => id==='a' ? 'b' : 'a';
 const day = ms => new Date(ms+8*3600000).toISOString().slice(0,10);
+const inkCells = (cell, brush) => {
+  const x=cell%7,y=Math.floor(cell/7),shape=brush==='splash'?[[0,0],[1,0],[-1,0],[0,1],[0,-1]]:brush==='heart'?[[0,0],[-1,-1],[1,-1],[-1,1],[1,1]]:[[0,0]];
+  return shape.map(([dx,dy])=>({x:x+dx,y:y+dy})).filter(p=>p.x>=0&&p.x<7&&p.y>=0&&p.y<7).map(p=>p.y*7+p.x);
+};
 export function initialState() {
   const user = (name,base) => ({name,coins:120,avatar:{base,hat:'none',glasses:'none',bag:'none'},inventory:[],daily:{day:'',count:0},receipts:[]});
-  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[]},game:null};
+  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[]},game:null,ink:null};
 }
 export class Store {
   constructor(file, options={}) {
     this.file=file; this.now=options.now || Date.now; this.state=fs.existsSync(file) ? JSON.parse(fs.readFileSync(file,'utf8')) : initialState();
     need(this.state.version===1,'不支援的存檔版本',500);
+    this.state.ink ??= null;
     this.presence={}; this.tasks={}; this.editLock=null;
     if(!fs.existsSync(file)) this.persist();
   }
@@ -70,7 +75,13 @@ export class Store {
       sharedInventory:state.home.archived?[]:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner==='shared'),
       homeInventory:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner===id||x.owner==='shared'||state.home.layout.some(p=>p.instance===x.instance)),
       quiz:state.quiz?{id:state.quiz.id,answers:state.quiz.answers[id],partnerReady:!!state.quiz.answers[partner],results:state.quiz.answers.a&&state.quiz.answers.b?state.quiz.answers:null}:null,quizQuestions:QUIZ,
-      game,task:this.tasks[id]||null,today:day(this.now())};
+      game,ink:this.inkSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
+  }
+  inkSnapshot(id) {
+    const g=this.state.ink;if(!g)return null;
+    const counts={a:g.board.filter(x=>x==='a').length,b:g.board.filter(x=>x==='b').length,empty:g.board.filter(x=>!x).length};
+    return {id:g.id,status:g.status,turn:g.turn,winner:g.winner,reason:g.reason,board:g.board,last:g.last,moves:g.moves.length,counts,
+      used:g.used[id]||{splash:false,heart:false},partnerUsed:g.used[other(id)]||{splash:false,heart:false}};
   }
   command(id,action,data={}) {
     need(['a','b'].includes(id),'請先登入',401);
@@ -162,11 +173,34 @@ export class Store {
           break;
         }
         case 'game/surrender': {const g=this.match(data);need(g.status!=='finished','對局已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
+        case 'ink/new': {
+          this.activeHome();need(!this.state.ink||this.state.ink.status==='finished','已有進行中的墨水大戰');
+          this.state.ink={id:crypto.randomUUID(),status:'playing',turn:'a',board:Array(49).fill(null),used:{a:{splash:false,heart:false},b:{splash:false,heart:false}},moves:[],last:null,winner:null,reason:null};break;
+        }
+        case 'ink/paint': {
+          const g=this.inkMatch(data);need(g.status==='playing'&&g.turn===id,'還沒輪到你');
+          need(integer(data.cell,0,48),'畫布座標無效');const brush=data.brush||'dot';need(['dot','splash','heart'].includes(brush),'筆刷無效');
+          if(brush!=='dot'){need(!g.used[id][brush],'這支特殊筆刷本局已使用');g.used[id][brush]=true;}
+          const cells=inkCells(data.cell,brush),before=g.board.slice();
+          need(cells.some(c=>g.board[c]!==id),'請選擇能擴張顏色的位置');
+          for(const c of cells)g.board[c]=id;
+          const gained=g.board.filter((v,i)=>v===id&&before[i]!==id).length;
+          g.last={player:id,cell:data.cell,brush,cells,gained};g.moves.push(g.last);g.turn=other(id);
+          const counts={a:g.board.filter(x=>x==='a').length,b:g.board.filter(x=>x==='b').length,empty:g.board.filter(x=>!x).length};
+          if(g.moves.length>=28||counts.empty===0){
+            g.status='finished';g.reason='completed';g.winner=counts.a===counts.b?'draw':(counts.a>counts.b?'a':'b');
+            if(g.winner==='draw'){this.state.users.a.coins+=32;this.state.users.b.coins+=32;}
+            else {this.state.users[g.winner].coins+=42;this.state.users[other(g.winner)].coins+=30;}
+          }
+          break;
+        }
+        case 'ink/surrender': {const g=this.inkMatch(data);need(g.status!=='finished','對局已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
         default: throw new GameError('不支援的操作',404);
       }
-    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','game/fire':'海戰棋完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
+    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
   }
   match(data) {const g=this.state.game;need(g&&g.id===data.gameId,'對局已更新，請重新整理');return g;}
+  inkMatch(data) {const g=this.state.ink;need(g&&g.id===data.gameId,'墨水對局已更新，請重新整理');return g;}
   layoutCommand(id,action,data) {
     this.activeHome();const lock=this.liveLock();
     if(action==='layout/lock'){need(!lock||lock.user===id,'伴侶正在布置，請稍候',409);this.editLock={user:id,expires:this.now()+90000};return;}

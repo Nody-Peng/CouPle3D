@@ -160,3 +160,29 @@ test('outfits enforce ownership, allow free starter, persist and remain compatib
  const {outfit,...legacy}=avatar;restored.command('a','avatar',{avatar:legacy});
  assert.equal(restored.state.users.a.avatar.outfit,'none');
 });
+
+
+test('ink duel persists turns, limits special brushes, finishes with one reward',t=>{
+ const {store:s,file}=fixture(t);
+ s.command('a','ink/new');const gameId=s.state.ink.id;
+ assert.equal(s.snapshot('a').ink.board.length,49);
+ assert.throws(()=>s.command('b','ink/paint',{gameId,cell:0,brush:'dot'}),/輪到/);
+ s.command('a','ink/paint',{gameId,cell:24,brush:'splash'});
+ assert.equal(s.snapshot('a').ink.used.splash,true);
+ assert.equal(s.snapshot('a').ink.counts.a,5);
+ const restored=new Store(file);
+ assert.equal(restored.snapshot('b').ink.partnerUsed.splash,true);
+ assert.throws(()=>restored.command('a','ink/paint',{gameId,cell:25,brush:'heart'}),/輪到/);
+ restored.command('b','ink/paint',{gameId,cell:0,brush:'heart'});
+ assert.throws(()=>restored.command('a','ink/paint',{gameId,cell:24,brush:'splash'}),/已使用/);
+ while(restored.state.ink.status==='playing'){
+  const id=restored.state.ink.turn;
+  const cell=restored.state.ink.board.findIndex(x=>x!==id);
+  restored.command(id,'ink/paint',{gameId,cell,brush:'dot'});
+ }
+ const coins={a:restored.state.users.a.coins,b:restored.state.users.b.coins},winner=restored.state.ink.winner;
+ assert.ok(['a','b','draw'].includes(winner));
+ assert.equal(coins.a+coins.b,winner==='draw'?304:312);
+ assert.throws(()=>restored.command(restored.state.ink.turn,'ink/paint',{gameId,cell:1,brush:'dot'}),/還沒輪到|對局已結束/);
+ assert.deepEqual({a:restored.state.users.a.coins,b:restored.state.users.b.coins},coins);
+});

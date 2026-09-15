@@ -19,7 +19,7 @@ function accept(next) {
   $('identity').textContent=state.user.name;$('coins').textContent=state.user.coins;
   $('partner-status').textContent=state.partner.name+(state.partner.online?' · 在線':' · 暫時離線');
   command('state',{user_id:state.user.id,avatar:avatarDraft||state.user.avatar,partner:state.partner,layout:layoutDraft||state.home.layout,inventory:state.homeInventory,archived:state.home.archived});
-  const signature=JSON.stringify([state.user,state.home.bank,state.home.archived,state.home.revision,state.home.lock?.user,state.game,state.quiz,state.task,state.partner.online]);
+  const signature=JSON.stringify([state.user,state.home.bank,state.home.archived,state.home.revision,state.home.lock?.user,state.game,state.ink,state.quiz,state.task,state.partner.online]);
   if(view&&signature!==lastSignature)render();lastSignature=signature;
 }
 function connectEvents() {
@@ -105,7 +105,7 @@ function dailyView() {
   if($('water-task'))$('water-task').onclick=()=>act('task/water',{},'花圃已澆水');
 }
 let info={title:'約會入口',description:'這個活動會在之後的版本加入。'};
-function infoView(){title(info.title);$('modal-content').innerHTML=`<p>${esc(info.description)}</p><div class="notice">第一版先提供海戰棋、花園委託、換裝與家庭布置。</div><button id="info-game" class="primary">去海戰俱樂部</button>`;$('info-game').onclick=()=>openView('battleship');}
+function infoView(){title(info.title);$('modal-content').innerHTML=`<p>${esc(info.description)}</p><div class="notice">第一版先提供海戰棋、墨水大戰、花園委託、換裝與家庭布置。</div><button id="info-game" class="primary">去海戰俱樂部</button>`;$('info-game').onclick=()=>openView('battleship');}
 
 // Only same-origin Godot iframe uses this bridge; state is still validated by the backend.
 window.togetherBridge={
