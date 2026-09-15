@@ -244,3 +244,30 @@ test('dessert kitchen validates stale games and surrender gives no reward',t=>{
  assert.equal(s.state.users.a.coins,120);assert.equal(s.state.home.bank,0);
  s.command('a','dessert/new');assert.throws(()=>s.command('a','dessert/play',{gameId,card:'whisk'}),/更新/);
 });
+
+test('fold battle validates drawings, hides setup, mirrors ink, persists and rewards once',t=>{
+ const {store:s,file}=fixture(t);s.command('a','fold/new');const gameId=s.state.fold.id;
+ const figures=[{x:20,y:20},{x:60,y:50},{x:25,y:80}].map(f=>({...f,strokes:[[[20,5],[20,40]]]}));
+ assert.throws(()=>s.command('a','fold/place',{gameId,figures:[figures[0]]}));
+ assert.throws(()=>s.command('a','fold/place',{gameId,figures:[figures[0],figures[0],figures[2]]}));
+ s.command('a','fold/place',{gameId,figures});assert.deepEqual(s.snapshot('b').fold.figures.a,[]);
+ s.command('b','fold/place',{gameId,figures});assert.equal(s.state.fold.status,'playing');
+ const winner=s.state.fold.turn,loser=winner==='a'?'b':'a',before=s.state.users[winner].coins;
+ assert.throws(()=>s.command(loser,'fold/drop',{gameId,shotNumber:0,x:80,y:20}),/輪到/);
+ assert.throws(()=>s.command(winner,'fold/drop',{gameId,shotNumber:0,x:NaN,y:20}));
+ for(let i=0;i<3;i++){
+  const shotNumber=s.state.fold.shots.length;
+  s.command(winner,'fold/drop',{gameId,shotNumber,x:100-figures[i].x,y:figures[i].y});
+  assert.deepEqual(s.state.fold.shots.at(-1).hits,[i]);
+  assert.throws(()=>s.command(winner,'fold/drop',{gameId,shotNumber,x:100-figures[i].x,y:figures[i].y}));
+  if(i<2)s.command(loser,'fold/drop',{gameId,shotNumber:s.state.fold.shots.length,x:5+i*5,y:5});
+ }
+ assert.equal(s.state.fold.winner,winner);assert.equal(s.state.users[winner].coins,before+40);
+ assert.equal(new Store(file).state.fold.status,'finished');assert.equal(s.snapshot('a').fold.figures.b.length,3);
+});
+test('fold surrender ends setup without rewards and rejects stale games',t=>{
+ const {store:s}=fixture(t);s.command('a','fold/new');const gameId=s.state.fold.id;
+ assert.throws(()=>s.command('b','fold/new'));s.command('b','fold/surrender',{gameId});
+ assert.equal(s.state.users.a.coins,120);assert.equal(s.state.users.b.coins,120);
+ s.command('a','fold/new');assert.throws(()=>s.command('a','fold/place',{gameId,figures:[]}));
+});

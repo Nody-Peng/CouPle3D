@@ -58,7 +58,7 @@ func surface_materials() -> void:
 		if color in [Color("63b4bd"),Color("67acb8"),Color("6ec5cf")]:
 			var mat := ShaderMaterial.new()
 			mat.shader = preload("res://scripts/nordic_water.gdshader")
-			mat.set_shader_parameter("water_color",Color("76afa9"))
+			mat.set_shader_parameter("water_color",Color("49bec4"))
 			child.material_override = mat
 		elif color==Color("91a38a"):
 			var mat := ShaderMaterial.new()

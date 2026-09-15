@@ -4,9 +4,9 @@ signal activity_requested(activity_id: String)
 @export var start_inside := false
 
 const CREAM := Color("f4e7d3")
-const TEAL := Color("368b89")
-const CORAL := Color("dc8177")
-const GOLD := Color("edc572")
+const TEAL := Color("29a7a2")
+const CORAL := Color("f08397")
+const GOLD := Color("ffd16e")
 const INK := Color("344c59")
 var transitioning := false
 var guiding := false
@@ -137,15 +137,17 @@ func _setup_lighting() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("b9d5dd")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("d8e5ed")
-	environment.ambient_light_energy = 0.35
+	environment.ambient_light_color = Color("e7f5ff")
+	environment.ambient_light_energy = 0.55
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
+	environment.adjustment_enabled = true
+	environment.adjustment_saturation = 1.18
 	env.environment = environment
 	add_child(env)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_color = Color("ffe1b6")
-	sun.light_energy = 0.6
+	sun.light_color = Color("fff0db")
+	sun.light_energy = 0.85
 	sun.shadow_enabled = not low_detail
 	add_child(sun)
 
@@ -603,6 +605,7 @@ func _build_ui() -> void:
 	var top := PanelContainer.new()
 	root.add_child(top)
 	top.position = Vector2(24,24)
+	top.visible = not OS.has_feature("web")
 	top.add_theme_stylebox_override("panel", _style())
 	var stack := VBoxContainer.new()
 	top.add_child(stack)
@@ -622,6 +625,7 @@ func _build_ui() -> void:
 	var bottom := PanelContainer.new()
 	root.add_child(bottom)
 	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bottom.visible = not OS.has_feature("web")
 	bottom.offset_left = 24
 	bottom.offset_right = -24
 	bottom.offset_top = -105
@@ -695,9 +699,9 @@ func _action(action: String) -> void:
 			overview = not overview
 		"night":
 			night = not night
-			sun.light_energy = 0.2 if night else 0.6
+			sun.light_energy = 0.2 if night else 0.85
 			environment.background_color = Color("27374c") if night else Color("b9d5dd")
-			environment.ambient_light_color = Color("8498bd") if night else Color("d8e5ed")
+			environment.ambient_light_color = Color("8498bd") if night else Color("e7f5ff")
 
 func _travel(home: bool) -> void:
 	if transitioning:
@@ -760,6 +764,9 @@ func _update_camera(delta: float) -> void:
 	camera.position = camera.position.lerp(focus+offset, minf(delta*6,1))
 	camera.look_at(focus)
 	var target_size := (56.0 if inside else 320.0) if overview else ((25.0 if inside else 34.0)*camera_zoom)
+	var viewport_size := get_viewport().get_visible_rect().size
+	var aspect := viewport_size.x / maxf(viewport_size.y, 1.0)
+	target_size *= maxf(1.0, 1.45 / aspect)
 	camera.size = lerpf(camera.size,target_size,minf(delta*6,1))
 
 func _process(delta: float) -> void:

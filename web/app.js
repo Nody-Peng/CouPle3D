@@ -19,7 +19,7 @@ function accept(next) {
   $('identity').textContent=state.user.name;$('coins').textContent=state.user.coins;
   $('partner-status').textContent=state.partner.name+(state.partner.online?' · 在線':' · 暫時離線');
   command('state',{user_id:state.user.id,avatar:avatarDraft||state.user.avatar,partner:state.partner,layout:layoutDraft||state.home.layout,inventory:state.homeInventory,archived:state.home.archived});
-  const signature=JSON.stringify([state.user,state.home.bank,state.home.archived,state.home.revision,state.home.lock?.user,state.game,state.ink,state.dessert,state.bank,state.quiz,state.task,state.partner.online]);
+  const signature=JSON.stringify([state.user,state.home.bank,state.home.archived,state.home.revision,state.home.lock?.user,state.game,state.ink,state.dessert,state.fold,state.bank,state.quiz,state.task,state.partner.online]);
   if(view&&signature!==lastSignature)render();lastSignature=signature;
 }
 function connectEvents() {
@@ -38,12 +38,13 @@ $('login-form').addEventListener('submit',async e=>{
 });
 $('logout').onclick=async()=>{await closeView();events?.close();await api('logout');location.reload();};
 document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>openView(b.dataset.view));
-document.querySelectorAll('[data-command]').forEach(b=>b.onclick=()=>command(b.dataset.command));
+document.querySelectorAll('[data-command]').forEach(b=>b.onclick=()=>{command(b.dataset.command);focusWorld();});
 $('close-modal').onclick=closeView;$('modal').addEventListener('cancel',e=>{e.preventDefault();closeView();});
+function focusWorld(){requestAnimationFrame(()=>{if(view||$('modal').open)return;const frame=$('game-frame');frame.focus();const canvas=frame.contentDocument?.querySelector('canvas');if(canvas){canvas.tabIndex=0;canvas.focus({preventScroll:true});}});}
 async function closeView() {
   if(view==='furniture'&&layoutDraft){try{await api('layout/cancel');}catch{}layoutDraft=null;}
   if(view==='wardrobe'&&state)command('avatar',{avatar:state.user.avatar});
-  $('modal').close();view='';avatarDraft=null;command('wardrobe',{value:false});command('pause',{value:false});touch={x:0,y:0};
+  $('modal').close();view='';focusWorld();avatarDraft=null;command('wardrobe',{value:false});command('pause',{value:false});touch={x:0,y:0};
   if(state)command('state',{user_id:state.user.id,avatar:state.user.avatar,partner:state.partner,layout:state.home.layout,inventory:state.homeInventory,archived:state.home.archived});
 }
 async function openView(name) {

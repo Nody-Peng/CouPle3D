@@ -1,3 +1,4 @@
+import {foldCommand, foldSnapshot} from './fold.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -111,7 +112,7 @@ export class Store {
       sharedInventory:state.home.archived?[]:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner==='shared'),
       homeInventory:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner===id||x.owner==='shared'||state.home.layout.some(p=>p.instance===x.instance)),
       quiz:state.quiz?{id:state.quiz.id,answers:state.quiz.answers[id],partnerReady:!!state.quiz.answers[partner],results:state.quiz.answers.a&&state.quiz.answers.b?state.quiz.answers:null}:null,quizQuestions:QUIZ,
-      game,ink:this.inkSnapshot(id),dessert:this.dessertSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
+      game,fold:foldSnapshot(this.state.fold,id),ink:this.inkSnapshot(id),dessert:this.dessertSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
   }
   inkSnapshot(id) {
     const g=this.state.ink;if(!g)return null;
@@ -293,6 +294,9 @@ export class Store {
         }
         case 'ink/surrender': {const g=this.inkMatch(data);need(g.status!=='finished','對局已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
 
+        case 'fold/new': case 'fold/place': case 'fold/drop': case 'fold/surrender': {
+          this.activeHome();foldCommand(this.state,id,action,data);break;
+        }
         case 'dessert/new': {
           this.activeHome();need(!this.state.dessert||this.state.dessert.status==='finished','已有進行中的甜點廚房');
           this.state.dessert={id:crypto.randomUUID(),status:'playing',round:1,maxRounds:8,orders:DESSERT_ORDERS.map(o=>({...o})),actions:{a:null,b:null},scores:{a:0,b:0},quality:48,harmony:8,chaos:0,log:[],winner:null,reason:null,memory:null,rewards:null};break;
