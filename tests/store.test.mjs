@@ -245,8 +245,9 @@ test('dessert kitchen validates stale games and surrender gives no reward',t=>{
  s.command('a','dessert/new');assert.throws(()=>s.command('a','dessert/play',{gameId,card:'whisk'}),/更新/);
 });
 
-test('fold battle validates drawings, hides setup, mirrors ink, persists and rewards once',t=>{
+test('legacy fold save retains original size, turns and rewards until completion',t=>{
  const {store:s,file}=fixture(t);s.command('a','fold/new');const gameId=s.state.fold.id;
+ delete s.state.fold.version;delete s.state.fold.pending;delete s.state.fold.round;s.state.fold.turn='a';
  const figures=[{x:20,y:20},{x:60,y:50},{x:25,y:80}].map(f=>({...f,strokes:[[[20,5],[20,40]]]}));
  assert.throws(()=>s.command('a','fold/place',{gameId,figures:[figures[0]]}));
  assert.throws(()=>s.command('a','fold/place',{gameId,figures:[figures[0],figures[0],figures[2]]}));
@@ -270,4 +271,79 @@ test('fold surrender ends setup without rewards and rejects stale games',t=>{
  assert.throws(()=>s.command('b','fold/new'));s.command('b','fold/surrender',{gameId});
  assert.equal(s.state.users.a.coins,120);assert.equal(s.state.users.b.coins,120);
  s.command('a','fold/new');assert.throws(()=>s.command('a','fold/place',{gameId,figures:[]}));
+});
+
+function foldV2(s){
+ s.command('a','fold/new');const gameId=s.state.fold.id;
+ const figures=[{x:25,y:20},{x:125,y:50},{x:55,y:95}].map(f=>({...f,strokes:[[[20,5],[20,40]]]}));
+ for(const id of ['a','b'])s.command(id,'fold/place',{gameId,figures});
+ return {gameId,figures};
+}
+test('fold v2 keeps committed ink secret, survives restart, rejects duplicates and stale rounds',t=>{
+ const {store:s,file}=fixture(t),{gameId,figures}=foldV2(s);
+ s.command('a','fold/drop',{gameId,round:1,x:135,y:20});
+ assert.equal(s.state.fold.shots.length,0);assert.equal(s.state.fold.figures.b[0].hit,false);
+ const a=s.snapshot('a').fold,b=s.snapshot('b').fold;
+ assert.deepEqual(a.ownPending,{x:135,y:20});assert.equal(b.ownPending,null);assert.equal(b.partnerReady,true);
+ assert.equal('pending' in a,false);assert.equal('pending' in b,false);assert.equal('turn' in a,false);
+ assert.throws(()=>s.command('a','fold/drop',{gameId,round:1,x:135,y:20}),/封好/);
+ const restored=new Store(file);
+ restored.command('b','fold/drop',{gameId,round:1,x:10,y:5});
+ assert.equal(restored.state.fold.round,2);assert.equal(restored.state.fold.shots.length,2);
+ assert.equal(restored.state.fold.figures.b[0].hit,true);assert.equal(restored.state.users.a.coins,120);
+ assert.equal(restored.snapshot('a').fold.ownPending,null);
+ assert.throws(()=>restored.command('a','fold/drop',{gameId,round:1,x:120,y:40}),/回合/);
+ assert.equal(restored.state.fold.pending.a,null);
+ assert.equal(restored.snapshot('a').fold.rules.width,160);
+ assert.ok(restored.snapshot('a').fold.rules.figureRadius<7&&restored.snapshot('a').fold.rules.inkRadius<3);
+});
+test('fold v2 resolves both lethal shots before awarding a draw, regardless of submission order',t=>{
+ for(const first of ['a','b']){
+  const {store:s,file}=fixture(t),{gameId,figures}=foldV2(s),second=first==='a'?'b':'a';
+  for(let i=0;i<3;i++){
+   const shot={gameId,round:i+1,x:160-figures[i].x,y:figures[i].y};
+   s.command(first,'fold/drop',shot);
+   assert.equal(s.state.fold.status,'playing');assert.equal(s.state.users.a.coins,120);
+   s.command(second,'fold/drop',shot);
+  }
+  assert.equal(s.state.fold.status,'finished');assert.equal(s.state.fold.winner,'draw');
+  assert.equal(s.state.fold.reason,'completed');assert.ok(s.state.fold.figures.a.every(f=>f.hit)&&s.state.fold.figures.b.every(f=>f.hit));
+  assert.equal(s.state.users.a.coins,150);assert.equal(s.state.users.b.coins,150);
+  const restored=new Store(file);assert.throws(()=>restored.command(first,'fold/drop',{gameId,round:3,x:105,y:95}),/結束/);
+  assert.equal(restored.state.users.a.coins,150);assert.equal(restored.state.users.b.coins,150);
+ }
+});
+test('fold v2 single winner still gives both players the last shot and pays once',t=>{
+ const {store:s}=fixture(t),{gameId,figures}=foldV2(s);
+ for(let i=0;i<3;i++){
+  s.command('a','fold/drop',{gameId,round:i+1,x:160-figures[i].x,y:figures[i].y});
+  assert.equal(s.state.fold.status,'playing');
+  s.command('b','fold/drop',{gameId,round:i+1,x:10+i*3,y:5});
+ }
+ assert.equal(s.state.fold.shots.filter(s=>s.player==='a').length,3);assert.equal(s.state.fold.shots.filter(s=>s.player==='b').length,3);
+ assert.equal(s.state.fold.winner,'a');assert.equal(s.state.users.a.coins,160);assert.equal(s.state.users.b.coins,145);
+});
+test('fold v2 smaller hit boundary, near misses, finite inputs and paper edges are enforced',t=>{
+ const {store:s}=fixture(t),{gameId}=foldV2(s);
+ for(const [x,y] of [[NaN,20],[Infinity,20],[0,20],[160,20],[20,111]])assert.throws(()=>s.command('a','fold/drop',{gameId,round:1,x,y}));
+ s.command('a','fold/drop',{gameId,round:1,x:130.75,y:20}); // distance 4.25: tangent hit
+ s.command('b','fold/drop',{gameId,round:1,x:130.74,y:20}); // distance 4.26: near miss
+ assert.deepEqual(s.state.fold.shots[0].hits,[0]);assert.deepEqual(s.state.fold.shots[1].hits,[]);assert.equal(s.state.fold.shots[1].near,true);
+ assert.throws(()=>s.command('b','fold/drop',{gameId,round:2,x:130.74,y:20}),/滴過/);
+});
+test('fold v2 round limit is checked only after both submissions and compares equal opportunities',t=>{
+ const {store:s}=fixture(t),{gameId}=foldV2(s);
+ for(let round=1;round<=30;round++){
+  const x=2+round*4;
+  s.command('b','fold/drop',{gameId,round,x,y:2});assert.equal(s.state.fold.status,'playing');
+  s.command('a','fold/drop',{gameId,round,x,y:2});
+ }
+ assert.equal(s.state.fold.shots.length,60);assert.equal(s.state.fold.status,'finished');assert.equal(s.state.fold.winner,'draw');assert.equal(s.state.fold.reason,'limit');
+ assert.equal(s.state.users.a.coins,150);assert.equal(s.state.users.b.coins,150);
+});
+test('fold v2 surrender clears unrevealed ink without paying rewards',t=>{
+ const {store:s}=fixture(t),{gameId}=foldV2(s);
+ s.command('b','fold/drop',{gameId,round:1,x:135,y:20});s.command('a','fold/surrender',{gameId});
+ assert.deepEqual(s.state.fold.pending,{a:null,b:null});assert.equal(s.state.fold.shots.length,0);
+ assert.equal(s.state.users.a.coins,120);assert.equal(s.state.users.b.coins,120);
 });
