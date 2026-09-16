@@ -13,8 +13,8 @@ const path=require('node:path');
   for(const [p,id] of [[pa,'a'],[pb,'b']]){
    await p.goto('http://127.0.0.1:8792');await p.locator(`button[value="${id}"]`).click();await p.locator('#loading').waitFor({state:'hidden',timeout:90000});
   }
-  await pa.locator('[data-view="fold"]').click();await pa.locator('#fold-start').click();
-  await pb.locator('[data-view="fold"]').click();await pb.locator('#fold-ready').waitFor();
+  await pa.locator('#menu-toggle').click();await pa.locator('[data-view="fold"]').click();await pa.locator('#fold-start').click();
+  await pb.locator('#menu-toggle').click();await pb.locator('[data-view="fold"]').click();await pb.locator('#fold-ready').waitFor();
   await pa.screenshot({path:'.runtime/fold-v2-setup.png'});
   for(const p of [pa,pb])await p.locator('#fold-ready').click();
   for(const p of [pa,pb])await p.waitForFunction(()=>state.fold.status==='playing');
@@ -23,7 +23,7 @@ const path=require('node:path');
   await pa.locator('#close-modal').click();
   await pa.waitForFunction(()=>document.activeElement===document.getElementById('game-frame')&&document.getElementById('game-frame').contentDocument.activeElement.tagName==='CANVAS');
   const start=await pa.evaluate(()=>position);await pa.keyboard.down('KeyW');await pa.waitForTimeout(600);await pa.keyboard.up('KeyW');await pa.waitForTimeout(500);const end=await pa.evaluate(()=>position);assert.ok(Math.hypot(start.x-end.x,start.z-end.z)>.05);
-  await pa.locator('[data-view="fold"]').click();
+  await pa.locator('#menu-toggle').click();await pa.locator('[data-view="fold"]').click();
   for(const size of [{width:1280,height:720},{width:800,height:600},{width:390,height:844}]){
    await pa.setViewportSize(size);await pa.waitForTimeout(250);
    const layout=await pa.evaluate(()=>{const paper=document.getElementById('fold-paper').getBoundingClientRect(),modal=document.getElementById('modal');return {left:paper.left,right:paper.right,w:innerWidth,scroll:modal.scrollWidth,client:modal.clientWidth};});
@@ -44,7 +44,7 @@ const path=require('node:path');
    assert.equal(hidden.pending,undefined);assert.equal(hidden.own,null);assert.equal(hidden.shots,(round-1)*2);assert.equal(hidden.round,round);
    assert.equal(await first.locator('#fold-drop').count(),0);
    if(round===1){
-    await first.reload();await first.locator('#loading').waitFor({state:'hidden',timeout:90000});await first.locator('[data-view="fold"]').click();
+    await first.reload();await first.locator('#loading').waitFor({state:'hidden',timeout:90000});await first.locator('#menu-toggle').click();await first.locator('[data-view="fold"]').click();
     assert.ok(await first.evaluate(()=>!!state.fold.ownPending));assert.equal(await first.locator('#fold-drop').count(),0);
    }
    await select(second,round-1);

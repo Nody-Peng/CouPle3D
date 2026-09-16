@@ -1,0 +1,14 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');const path=require('node:path');
+(async()=>{const {createApp}=await import('../server/server.mjs');const {server}=createApp({file:path.resolve('.runtime/hud-'+Date.now()+'.json')});await new Promise(r=>server.listen(8795,'127.0.0.1',r));let browser;try{
+ browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});const p=await browser.newPage({viewport:{width:1280,height:800},hasTouch:true}),errors=[];p.on('pageerror',e=>errors.push(e.message));await p.goto('http://127.0.0.1:8795');await p.locator('button[value="a"]').click();await p.locator('#loading').waitFor({state:'hidden',timeout:90000});await p.waitForTimeout(500);
+ assert.equal(await p.locator('#game-menu').isVisible(),false);assert.equal(await p.locator('#game-frame').evaluate(e=>e.getBoundingClientRect().height),800);
+ await p.keyboard.press('Escape');await p.locator('#game-menu').waitFor({state:'visible'});await p.locator('[data-view="wardrobe"]').click();await p.locator('#save-avatar').waitFor();assert.equal(await p.locator('#game-menu').isVisible(),false);await p.locator('#menu-back').click();await p.locator('#game-menu').waitFor({state:'visible'});await p.keyboard.press('Escape');await p.waitForFunction(()=>!view&&document.activeElement.id==='game-frame');
+ for(const size of [{width:390,height:844},{width:844,height:390},{width:360,height:640}]){
+ await p.setViewportSize(size);await p.waitForTimeout(250);await p.locator('#menu-toggle').click();await p.locator('#game-menu').waitFor({state:'visible'});
+ const fit=await p.locator('#modal').evaluate(e=>{const r=e.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1&&r.bottom<=innerHeight+1&&e.scrollWidth<=e.clientWidth+1});assert.ok(fit);
+ await p.screenshot({path:'.runtime/hud-menu-'+size.width+'.png'});await p.locator('#close-modal').click();await p.locator('#camera-toggle').click();assert.equal(await p.locator('#camera-tools').isVisible(),true);await p.locator('#camera-toggle').click();
+ const before=await p.evaluate(()=>position);const r=await p.locator('#touch-pad').boundingBox();await p.mouse.move(r.x+r.width/2,r.y+r.height/2);await p.mouse.down();await p.mouse.move(r.x+r.width/2,r.y+8);await p.waitForTimeout(600);await p.mouse.up();await p.waitForTimeout(500);assert.equal(await p.evaluate(()=>touch.y),0);const after=await p.evaluate(()=>position);assert.ok(Math.hypot(before.x-after.x,before.z-after.z)>.05);
+ await p.screenshot({path:'.runtime/hud-world-'+size.width+'.png'});
+ }
+ assert.deepEqual(errors,[]);console.log('PASS full viewport, Esc menu, wardrobe/back, focus restore, 3 mobile sizes, camera disclosure, joystick movement and release');
+ }finally{await browser?.close();server.closeAllConnections();server.close();}})().catch(e=>{console.error(e);process.exit(1)});
