@@ -2,8 +2,8 @@ extends Node3D
 ## Walk-in glass cafe, sharing the city world. Roof cuts away as visitors enter.
 var host: Node3D
 var roof: Node3D
-const WOOD := Color("a67955")
-const SAGE := Color("748d79")
+const WOOD := Color("ad7143")
+const SAGE := Color("3f896b")
 const PAPER := Color("f1e7d5")
 const DARK := Color("3f514c")
 
@@ -66,9 +66,9 @@ func build(source: Node3D, p: Vector3) -> void:
 	host = source
 	position = p
 	# Pale stone terrace and level entry: no step can trap a walking character.
-	box(Vector3(0,0.025,0),Vector3(22,0.05,16),Color("d6c8b2"))
-	box(Vector3(0,0.02,-10.5),Vector3(24,0.04,5),Color("d9cbb7"))
-	box(Vector3(0,0.025,-14.2),Vector3(3.2,0.05,3),Color("d9cbb7"))
+	box(Vector3(0,0.025,0),Vector3(22,0.05,16),Color("d6ad7d"))
+	box(Vector3(0,0.02,-10.5),Vector3(24,0.04,5),Color("e1b783"))
+	box(Vector3(0,0.025,-14.2),Vector3(3.2,0.05,3),Color("e1b783"))
 	for x in range(-10,11,2): box(Vector3(x,0.058,0),Vector3(0.025,0.008,16),Color("bba88e"))
 	# Floor-to-ceiling glass walls with a generous open double-door entrance.
 	for x in [-11.0,11.0]:
@@ -105,7 +105,7 @@ func build(source: Node3D, p: Vector3) -> void:
 	# Skylight and roof garden, visible from the city's isometric camera.
 	host._box(roof,Vector3(-3,4.72,0),Vector3(9,0.15,8),DARK)
 	for x in [-6,-3,0]:
-		host._box(roof,Vector3(x,4.82,0),Vector3(2.85,0.08,7.7),Color("a8cec5"))
+		host._box(roof,Vector3(x,4.82,0),Vector3(2.85,0.08,7.7),Color("5bbca9"))
 	for z in [-5,5]:
 		host._box(roof,Vector3(7,4.85,z),Vector3(5,0.4,1),WOOD)
 		for x in [5,6,7,8,9]: host._ball(roof,Vector3(x,5.2,z),0.42,SAGE)

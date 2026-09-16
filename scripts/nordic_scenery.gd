@@ -4,10 +4,10 @@ var host: Node3D
 var ripples: Array[Node3D] = []
 var water_time := 0.0
 var spray: Array[Node3D] = []
-const STONE := Color("c5c3b6")
-const CAP := Color("e0dacb")
-const SLATE := Color("586e70")
-const TIMBER := Color("a69073")
+const STONE := Color("a8b4ae")
+const CAP := Color("ebc796")
+const SLATE := Color("387f83")
+const TIMBER := Color("b57d49")
 static func pave(parent: Node3D, center: Vector3, size: Vector2) -> void:
 	var areas: Array = parent.get_meta("stone_areas",[])
 	var region := Rect2(Vector2(center.x-size.x/2,center.z-size.y/2),size)
@@ -32,7 +32,7 @@ static func pave(parent: Node3D, center: Vector3, size: Vector2) -> void:
 	for i in range(placements.size()):
 		multi.set_instance_transform(i,Transform3D(Basis.IDENTITY,placements[i]))
 		var t := fmod(absf(sin(i*13.71+center.x)*917.3),1.0)
-		multi.set_instance_color(i,Color("b4b6ad").lerp(Color("d7d1c1"),t))
+		multi.set_instance_color(i,Color("c28f5f").lerp(Color("dba774"),t))
 	var node := MultiMeshInstance3D.new()
 	node.multimesh = multi
 	var material := StandardMaterial3D.new()
@@ -58,7 +58,7 @@ func surface_materials() -> void:
 		if color in [Color("63b4bd"),Color("67acb8"),Color("6ec5cf")]:
 			var mat := ShaderMaterial.new()
 			mat.shader = preload("res://scripts/nordic_water.gdshader")
-			mat.set_shader_parameter("water_color",Color("49bec4"))
+			mat.set_shader_parameter("water_color",Color("0a94c9"))
 			child.material_override = mat
 		elif color==Color("91a38a"):
 			var mat := ShaderMaterial.new()
@@ -75,7 +75,7 @@ func water_details() -> void:
 	for i in range(8):
 		var angle := TAU*i/8
 		for segment in range(14):
-			host._beam(self,jet_point(float(segment)/14,angle),jet_point(float(segment+1)/14,angle),0.025,Color("bddbd2"))
+			host._beam(self,jet_point(float(segment)/14,angle),jet_point(float(segment+1)/14,angle),0.025,Color("a7def5"))
 		var droplet: MeshInstance3D = host._ball(self,jet_point(0,angle),0.065,Color("e1f1e8"))
 		droplet.set_meta("angle",angle)
 		spray.append(droplet)
@@ -88,7 +88,7 @@ func water_details() -> void:
 			var ring := TorusMesh.new()
 			ring.inner_radius = 0.63+i*0.5
 			ring.outer_radius = ring.inner_radius+0.025
-			var ripple: MeshInstance3D = host._mesh(self,ring,center,Color("b4d8d1"))
+			var ripple: MeshInstance3D = host._mesh(self,ring,center,Color("bce8fa"))
 			ripple.set_meta("phase",float(i))
 			ripples.append(ripple)
 	# Tall irises, rushes and shore rocks live within the pond barrier.
@@ -99,7 +99,7 @@ func water_details() -> void:
 			host._beam(self,p+Vector3(j*0.12,0.15,0),p+Vector3(j*0.12,0.85+0.15*j,0.08),0.035,Color("7f986e"))
 			if i%3==0: host._ball(self,p+Vector3(j*0.12,1.0+0.15*j,0.08),0.09,Color("b7a6bc"))
 		if i%2==0:
-			var rock: MeshInstance3D = host._ball(self,p+Vector3(0,0.16,0.4),0.48,Color("a5aba1"))
+			var rock: MeshInstance3D = host._ball(self,p+Vector3(0,0.16,0.4),0.48,Color("8dada8"))
 			rock.scale = Vector3(1.2,0.6,0.8)
 	# Mallard silhouettes, kept inside the water and away from the walking edge.
 	for i in range(3):
@@ -207,10 +207,10 @@ func natural_pond() -> void:
 			rock.scale = Vector3(1.2,0.45+(i%3)*0.1,0.85)
 			rock.rotation.y = a
 	surface.generate_normals()
-	var water: MeshInstance3D = host._mesh(self,surface.commit(),Vector3.ZERO,Color("669b91"))
+	var water: MeshInstance3D = host._mesh(self,surface.commit(),Vector3.ZERO,Color("078fc7"))
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://scripts/nordic_water.gdshader")
-	mat.set_shader_parameter("water_color",Color("669b91"))
+	mat.set_shader_parameter("water_color",Color("078fc7"))
 	water.material_override = mat
 
 static func garden_path(source: Node3D, points: Array[Vector3], width: float) -> void:

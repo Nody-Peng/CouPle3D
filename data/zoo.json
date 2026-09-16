@@ -1,8 +1,8 @@
 [
- {"id":"panda","name":"熊貓竹林","x":84,"z":-13,"rx":9,"rz":8,"entryX":84,"entryZ":-2,"color":"a8bd88","description":"竹林裡慢慢散步，累了就停下來吃點竹葉。"},
- {"id":"giraffe","name":"長頸鹿草原","x":126,"z":-13,"rx":9,"rz":8,"entryX":126,"entryZ":-2,"color":"cab982","description":"長長的脖子、搖晃的小尾巴，正朝樹梢張望。"},
- {"id":"rabbit","name":"兔兔花園","x":105,"z":20,"rx":7,"rz":5,"entryX":105,"entryZ":12,"color":"b8c79b","description":"蹦蹦跳跳的小耳朵，也需要安靜的休息時間。"},
- {"id":"capybara","name":"水豚暖泉","x":76,"z":24,"rx":10,"rz":7,"entryX":76,"entryZ":14,"color":"b0b7a0","description":"泡湯、散步、曬太陽，是水豚最喜歡的日常。"},
- {"id":"penguin","name":"企鵝海灣","x":140,"z":20,"rx":7,"rz":8,"entryX":140,"entryZ":9,"color":"b0d1d0","description":"短短的步伐左右搖擺，小翅膀跟著節奏拍動。"},
- {"id":"fox","name":"狐狸森林","x":105,"z":-9,"rx":6,"rz":7,"entryX":105,"entryZ":1,"color":"b2b397","description":"尖耳朵轉一轉，蓬鬆的尾巴在蕨葉間輕輕搖擺。"}
+ {"id":"panda","name":"熊貓竹林","x":84,"z":-13,"rx":9,"rz":8,"entryX":84,"entryZ":-2,"color":"83b65a","description":"竹林裡慢慢散步，累了就停下來吃點竹葉。"},
+ {"id":"giraffe","name":"長頸鹿草原","x":126,"z":-13,"rx":9,"rz":8,"entryX":126,"entryZ":-2,"color":"d7b671","description":"長長的脖子、搖晃的小尾巴，正朝樹梢張望。"},
+ {"id":"rabbit","name":"兔兔花園","x":105,"z":20,"rx":7,"rz":5,"entryX":105,"entryZ":12,"color":"98c467","description":"蹦蹦跳跳的小耳朵，也需要安靜的休息時間。"},
+ {"id":"capybara","name":"水豚暖泉","x":76,"z":24,"rx":10,"rz":7,"entryX":76,"entryZ":14,"color":"8fac6f","description":"泡湯、散步、曬太陽，是水豚最喜歡的日常。"},
+ {"id":"penguin","name":"企鵝海灣","x":140,"z":20,"rx":7,"rz":8,"entryX":140,"entryZ":9,"color":"a1d7e4","description":"短短的步伐左右搖擺，小翅膀跟著節奏拍動。"},
+ {"id":"fox","name":"狐狸森林","x":105,"z":-9,"rx":6,"rz":7,"entryX":105,"entryZ":1,"color":"81a964","description":"尖耳朵轉一轉，蓬鬆的尾巴在蕨葉間輕輕搖擺。"}
 ]

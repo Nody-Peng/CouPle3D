@@ -9,7 +9,7 @@ void fragment(){
  float n=fract(sin(dot(cell,vec2(12.9898,78.233)))*43758.5453);
  float edge=min(min(f.x,1.0-f.x),min(f.y,1.0-f.y));
  float gap=smoothstep(0.025,0.07,edge);
- vec3 stone=mix(vec3(0.62,0.65,0.61),vec3(0.80,0.77,0.69),n);
- ALBEDO=mix(vec3(0.53,0.55,0.50),stone,gap);
+ vec3 stone=mix(vec3(0.72,0.48,0.29),vec3(0.85,0.64,0.40),n);
+ ALBEDO=mix(vec3(0.64,0.42,0.27),stone,gap);
  ROUGHNESS=0.95;
 }

@@ -3,10 +3,10 @@ extends Node3D
 signal activity_requested(activity_id: String)
 @export var start_inside := false
 
-const CREAM := Color("f4e7d3")
-const TEAL := Color("29a7a2")
-const CORAL := Color("f08397")
-const GOLD := Color("ffd16e")
+const CREAM := Color("f6e3bc")
+const TEAL := Color("239c96")
+const CORAL := Color("df7661")
+const GOLD := Color("f6c75e")
 const INK := Color("344c59")
 var transitioning := false
 var guiding := false
@@ -15,6 +15,7 @@ var camera_zoom := 1.0
 var fade: ColorRect
 var navigation: Label
 var material_cache: Dictionary = {}
+var foliage_material_cache: Dictionary = {}
 var world: Node3D
 var player: CharacterBody3D
 var camera: Camera3D
@@ -137,16 +138,16 @@ func _setup_lighting() -> void:
 	environment.background_mode = Environment.BG_COLOR
 	environment.background_color = Color("b9d5dd")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("e7f5ff")
-	environment.ambient_light_energy = 0.55
+	environment.ambient_light_color = Color("e3f0ff")
+	environment.ambient_light_energy = 0.43
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	environment.adjustment_enabled = true
-	environment.adjustment_saturation = 1.18
+	environment.adjustment_saturation = 1.04
 	env.environment = environment
 	add_child(env)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_color = Color("fff0db")
+	sun.light_color = Color("fff5e5")
 	sun.light_energy = 0.85
 	sun.shadow_enabled = not low_detail
 	add_child(sun)
@@ -186,19 +187,31 @@ func _build(home: bool) -> void:
 	if is_instance_valid(web_session):
 		web_session.rebuilt()
 
-func _tree(pos: Vector3, color := Color("719e87")) -> void:
+func _foliage(pos: Vector3, radius: float, color: Color) -> void:
+	var key := color.to_rgba32()
+	if not foliage_material_cache.has(key):
+		var material := ShaderMaterial.new()
+		material.shader = preload("res://scripts/storybook_foliage.gdshader")
+		material.set_shader_parameter("canopy_color",color)
+		foliage_material_cache[key] = material
+	_ball(world,pos,radius,color).material_override = foliage_material_cache[key]
+
+func _tree(pos: Vector3, color := Color("4d9145")) -> void:
+	# Keep blossom and autumn trees distinct; green crowns use a deeper woodland palette.
+	if color.g > color.r and color.g > color.b:
+		color = Color("438849").lerp(Color("679d42"),floorf(fposmod(pos.x*0.13+pos.z*0.17,1.0)*3.0)/2.0)
 	_round_barrier(pos+Vector3(0,1.2,0),0.45,2.4)
-	_cylinder(world, pos + Vector3(0,1,0), 0.18, 2.0, Color("8a7160"))
-	_ball(world, pos + Vector3(0,2.5,0), 1.2, color)
+	_cylinder(world, pos + Vector3(0,1,0), 0.18, 2.0, Color("995f3d"))
+	_foliage(pos + Vector3(0,2.5,0), 1.2, color)
 	if low_detail:
 		_cylinder(world, pos + Vector3(0,0.12,0), 1.3, 0.24, CREAM)
 		return
-	_ball(world, pos + Vector3(0.55,3.2,0), 0.85, color.lightened(0.1))
+	_foliage(pos + Vector3(0.55,3.2,0), 0.85, color.lightened(0.06))
 	for i in range(5):
 		var a := i*TAU/5+pos.x
 		var crown := pos+Vector3(cos(a)*0.8,2.8+sin(i*1.7)*0.35,sin(a)*0.7)
-		_beam(world,pos+Vector3(0,1.65,0),crown,0.065,Color("8a7160"))
-		_ball(world,crown,0.62,color.lightened(0.025*(i%3)))
+		_beam(world,pos+Vector3(0,1.65,0),crown,0.065,Color("995f3d"))
+		_foliage(crown,0.62,color.lightened(0.025*(i%3)))
 	_cylinder(world, pos + Vector3(0,0.12,0), 1.3, 0.24, CREAM)
 
 func _lamp(pos: Vector3) -> void:
@@ -227,18 +240,18 @@ func _park() -> void:
 	_path(Vector3(-30,0,25),Vector2(5,20))
 	_path(Vector3(31,0,17),Vector2(36,25))
 	for x in [-151.5,151.5]:
-		_box(world,Vector3(x,0.55,0),Vector3(0.5,3,88),Color("b5b7aa"),true)
+		_box(world,Vector3(x,0.55,0),Vector3(0.5,3,88),Color("b5b7a0"),true)
 	for z in [-43.5,43.5]:
 		if z<0:
-			_box(world,Vector3(0,0.55,z),Vector3(304,3,0.5),Color("b5b7aa"),true)
+			_box(world,Vector3(0,0.55,z),Vector3(304,3,0.5),Color("b5b7a0"),true)
 		else:
-			for side in [-1,1]: _box(world,Vector3(side*84,0.55,z),Vector3(136,1.1,0.5),Color("b5b7aa"),true)
+			for side in [-1,1]: _box(world,Vector3(side*84,0.55,z),Vector3(136,1.1,0.5),Color("b5b7a0"),true)
 	_box(world,Vector3(0,-0.45,50),Vector3(32,0.9,12),Color("d6c4a6"),true)
 	for side in [-1,1]:
-		_box(world,Vector3(side*15.8,0.55,50),Vector3(0.4,1.1,12),Color("b5b7aa"),true)
+		_box(world,Vector3(side*15.8,0.55,50),Vector3(0.4,1.1,12),Color("b5b7a0"),true)
 		_flowerbed(Vector3(side*12,0,52),Vector2(4,3))
 		_bench(Vector3(side*8,0,53),0)
-	_box(world,Vector3(0,0.55,55.8),Vector3(32,1.1,0.4),Color("b5b7aa"),true)
+	_box(world,Vector3(0,0.55,55.8),Vector3(32,1.1,0.4),Color("b5b7a0"),true)
 	for x in range(-52,53,4):
 		_box(world,Vector3(x,1,-43.5),Vector3(0.25,1.8,0.25),CREAM)
 	# Varied city silhouette with shopfronts, stepped towers and roof gardens.
@@ -313,7 +326,7 @@ func _park() -> void:
 	# Landscape rhythm along the boulevards; no planting blocks a portal.
 	for x in [-51,-9,8,51]:
 		for z in [-37,-17,13,36]:
-			_tree(Vector3(x,0,z),Color("d6a2a6") if int(x)%2 else Color("749786"))
+			_tree(Vector3(x,0,z),Color("e99b9c") if int(x)%2 else Color("749786"))
 	for x in [-44,-36,-16,22,31,43]:
 		_tree(Vector3(x,0,-39))
 	for z in [-35,-17,10,25,36]:
@@ -701,7 +714,7 @@ func _action(action: String) -> void:
 			night = not night
 			sun.light_energy = 0.2 if night else 0.85
 			environment.background_color = Color("27374c") if night else Color("b9d5dd")
-			environment.ambient_light_color = Color("8498bd") if night else Color("e7f5ff")
+			environment.ambient_light_color = Color("8498bd") if night else Color("e3f0ff")
 
 func _travel(home: bool) -> void:
 	if transitioning:
@@ -813,13 +826,13 @@ func _collider(pos: Vector3, size: Vector3) -> void:
 
 func _path(pos: Vector3, size: Vector2) -> void:
 	if not inside: preload("res://scripts/nordic_scenery.gd").pave(world,pos,size)
-	_box(world,pos+Vector3(0,0.015,0),Vector3(size.x,0.03,size.y),Color("aaa99d"))
+	_box(world,pos+Vector3(0,0.015,0),Vector3(size.x,0.03,size.y),Color("b88759"))
 	for side in [-1,1]:
 		_box(world,pos+Vector3(side*(size.x/2-0.12),0.045,0),Vector3(0.12,0.04,size.y),CREAM)
 		_box(world,pos+Vector3(0,0.045,side*(size.y/2-0.12)),Vector3(size.x,0.04,0.12),CREAM)
 	if size.y > size.x:
 		for z in range(int(-size.y/2)+2,int(size.y/2),3):
-			_box(world,pos+Vector3(0,0.037,z),Vector3(size.x-0.5,0.01,0.025),Color("c2b198"))
+			_box(world,pos+Vector3(0,0.037,z),Vector3(size.x-0.5,0.01,0.025),Color("d6a571"))
 
 func _flowerbed(pos: Vector3, size: Vector2) -> void:
 	_box(world,pos+Vector3(0,0.15,0),Vector3(size.x,0.3,size.y),CREAM)
@@ -848,13 +861,13 @@ func _bench(pos: Vector3, angle: float) -> void:
 	parent.position = pos
 	parent.rotation.y = angle
 	for i in range(4):
-		_box(parent,Vector3(0,0.6,-0.36+i*0.24),Vector3(3,0.12,0.18),Color("a17c60"))
+		_box(parent,Vector3(0,0.6,-0.36+i*0.24),Vector3(3,0.12,0.18),Color("b77745"))
 	for i in range(3):
-		_box(parent,Vector3(0,0.95+i*0.22,0.48),Vector3(3,0.16,0.13),Color("a17c60"))
+		_box(parent,Vector3(0,0.95+i*0.22,0.48),Vector3(3,0.16,0.13),Color("b77745"))
 	for x in [-1.15,1.15]:
 		_box(parent,Vector3(x,0.3,0),Vector3(0.15,0.6,0.8),INK)
 		_box(parent,Vector3(x,0.82,0),Vector3(0.085,0.5,0.08),INK)
-		_box(parent,Vector3(x,1.06,0),Vector3(0.16,0.08,0.85),Color("bd9a77"))
+		_box(parent,Vector3(x,1.06,0),Vector3(0.16,0.08,0.85),Color("d69b60"))
 		for y in [0.95,1.17,1.39]:
 			_ball(parent,Vector3(x,y,0.405),0.027,Color("d5c2a1"))
 	_box(parent,Vector3(0,1.17,0.4),Vector3(0.38,0.13,0.025),Color("c8af7c"))
@@ -934,7 +947,7 @@ func _mansion(pos: Vector3) -> void:
 	_label(world,"OUR HOME",pos+Vector3(0,4.3,8.4),40)
 	for x in [-10.5,10.5]:
 		_flowerbed(pos+Vector3(x,0,3),Vector2(1.8,9))
-		_tree(pos+Vector3(x,0,-5),Color("d6a2a6"))
+		_tree(pos+Vector3(x,0,-5),Color("e99b9c"))
 	# Short picket fences leave the front path open.
 	for side in [-1,1]:
 		for i in range(8):

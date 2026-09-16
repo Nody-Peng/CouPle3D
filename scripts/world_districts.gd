@@ -143,10 +143,10 @@ func habitat(h: Dictionary) -> void:
 		var next := TAU*float(i+1)/48
 		var a := p+Vector3(cos(t)*h.rx,0,sin(t)*h.rz)
 		var b := p+Vector3(cos(next)*h.rx,0,sin(next)*h.rz)
-		for y in [0.55,1.05]: host._beam(host.world,a+Vector3(0,y,0),b+Vector3(0,y,0),0.09,Color("b89b79"))
+		for y in [0.55,1.05]: host._beam(host.world,a+Vector3(0,y,0),b+Vector3(0,y,0),0.09,Color("bb784a"))
 		if i%3==0:
 			host._cylinder(host.world,a+Vector3(0,0.65,0),0.1,1.3,host.CREAM)
-			host._ball(host.world,a+Vector3(0,1.34,0),0.14,Color("d6a5a1"))
+			host._ball(host.world,a+Vector3(0,1.34,0),0.14,Color("e8b27a"))
 	var animal_count := 1 if host.low_detail else 3
 	for i in range(animal_count):
 		var animal := Node3D.new()
@@ -157,26 +157,26 @@ func habitat(h: Dictionary) -> void:
 		animals.append(animal)
 	# Different planting, shelters and water features give each habitat its own silhouette.
 	if h.id in ["capybara","penguin"]:
-		var pond: MeshInstance3D = host._cylinder(host.world,p+Vector3(0,0.095,-h.rz*0.48),1,0.045,Color("78b7bc"))
+		var pond: MeshInstance3D = host._cylinder(host.world,p+Vector3(0,0.095,-h.rz*0.48),1,0.045,Color("139bcb"))
 		pond.scale = Vector3(h.rx*0.68,1,h.rz*0.32)
 		for i in range(5):
-			var rock: MeshInstance3D = host._ball(host.world,p+Vector3(-h.rx*0.6+i*h.rx*0.3,0.4,-h.rz*0.76),0.65,Color("e6e8df") if h.id=="penguin" else Color("969a89"))
+			var rock: MeshInstance3D = host._ball(host.world,p+Vector3(-h.rx*0.6+i*h.rx*0.3,0.4,-h.rz*0.76),0.65,Color("e6e8df") if h.id=="penguin" else Color("8fa3a0"))
 			rock.scale = Vector3(1,0.5+0.1*i,0.7)
 	elif h.id=="panda":
 		var bamboo_count := 7 if host.low_detail else 15
 		for i in range(bamboo_count):
 			var q := p+Vector3(-6.5+i*(13.0/maxf(1,bamboo_count-1)),0,-5.3+sin(i*2.1)*0.55)
 			var height := 2.5+0.8*(1.0+sin(i*1.7))
-			host._cylinder(host.world,q+Vector3(0,height/2,0),0.065,height,Color("6d8e54"))
+			host._cylinder(host.world,q+Vector3(0,height/2,0),0.065,height,Color("3e853e"))
 			for joint in range(1,int(height/0.45)):
-				host._cylinder(host.world,q+Vector3(0,joint*0.45,0),0.083,0.045,Color("acb879"))
+				host._cylinder(host.world,q+Vector3(0,joint*0.45,0),0.083,0.045,Color("8dbc54"))
 			for branch in range(3):
 				var angle := i*2.4+branch*2.1
 				var origin := q+Vector3(0,height-0.35-branch*0.45,0)
 				var tip := origin+Vector3(cos(angle)*0.65,0.25,sin(angle)*0.65)
-				host._beam(host.world,origin,tip,0.023,Color("69884f"))
+				host._beam(host.world,origin,tip,0.023,Color("367845"))
 				for leaf_index in range(4):
-					var leaf: MeshInstance3D = host._ball(host.world,origin.lerp(tip,0.35+leaf_index*0.2),0.24,Color("829f60").lightened((leaf_index%2)*0.08))
+					var leaf: MeshInstance3D = host._ball(host.world,origin.lerp(tip,0.35+leaf_index*0.2),0.24,Color("559a45").lightened((leaf_index%2)*0.08))
 					leaf.scale = Vector3(0.28,0.12,1.25)
 					leaf.rotation.y = angle+leaf_index*0.8
 			if i%3==0:
@@ -378,24 +378,24 @@ func habitat_details(h: Dictionary) -> void:
 		var a := PI*1.15+i*PI*0.17
 		var q := p+Vector3(cos(a)*h.rx*0.77,0,sin(a)*h.rz*0.77)
 		for j in range(4):
-			var leaf: MeshInstance3D = host._ball(host.world,q+Vector3(sin(j*1.7)*0.18,0.25,cos(j*1.7)*0.18),0.35,Color("819963"))
+			var leaf: MeshInstance3D = host._ball(host.world,q+Vector3(sin(j*1.7)*0.18,0.25,cos(j*1.7)*0.18),0.35,Color("4a903f"))
 			leaf.scale = Vector3(0.28,0.3,1.4)
 			leaf.rotation.y = j*1.7
 	if h.id in ["panda","fox","giraffe"]:
 		# Shaded wooden habitat shelter: posts, beams, slatted roof.
 		var q := p+Vector3(h.rx*0.5,0,-h.rz*0.55)
 		for x in [-1.2,1.2]:
-			for z in [-0.7,0.7]: host._box(host.world,q+Vector3(x,1.25,z),Vector3(0.12,2.5,0.12),Color("a1805e"))
-		for i in range(7): host._box(host.world,q+Vector3(-1.3+i*0.43,2.55,0),Vector3(0.35,0.15,2),Color("aa8b64"))
+			for z in [-0.7,0.7]: host._box(host.world,q+Vector3(x,1.25,z),Vector3(0.12,2.5,0.12),Color("a66b41"))
+		for i in range(7): host._box(host.world,q+Vector3(-1.3+i*0.43,2.55,0),Vector3(0.35,0.15,2),Color("c38951"))
 		if h.id=="giraffe":
-			host._cylinder(host.world,p+Vector3(-5,1.8,3.5),0.12,3.6,Color("a1805e"))
-			host._box(host.world,p+Vector3(-5,3.5,3.5),Vector3(1.3,0.5,1),Color("b9976b"))
+			host._cylinder(host.world,p+Vector3(-5,1.8,3.5),0.12,3.6,Color("a66b41"))
+			host._box(host.world,p+Vector3(-5,3.5,3.5),Vector3(1.3,0.5,1),Color("c98c50"))
 			for i in range(4): host._ball(host.world,p+Vector3(-5+i*0.13,3.8,3.5),0.2,Color("92a778"))
 	if h.id=="rabbit":
 		for i in range(5):
 			var q := p+Vector3(-2+i,0,3.5)
 			host._cylinder(host.world,q+Vector3(0,0.19,0),0.1,0.35,Color("d99555"),0.04)
-			host._ball(host.world,q+Vector3(0,0.4,0),0.13,Color("71995e"))
+			host._ball(host.world,q+Vector3(0,0.4,0),0.13,Color("418749"))
 	if h.id in ["capybara","penguin"]:
 		for i in range(3):
 			var q := p+Vector3(-2+i*2,0.16,-h.rz*0.48)
