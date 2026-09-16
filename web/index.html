@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#294c50"><title>心動之城 · Together City</title>
-  <link rel="icon" href="/game/index.icon.png"><link rel="stylesheet" href="/app.css"><script src="/app.js" defer></script><script src="/battleship.js" defer></script><script src="/inkbattle.js" defer></script><script src="/dessert.js" defer></script><script src="/fold.js" defer></script>
+  <link rel="icon" href="/game/index.icon.png"><link rel="stylesheet" href="/app.css"><script src="/app.js" defer></script><script src="/battleship.js" defer></script><script src="/inkbattle.js" defer></script><script src="/dessert.js" defer></script><script src="/fold.js" defer></script><script src="/controls.js" defer></script>
 </head>
 <body>
   <main id="welcome">
@@ -17,12 +17,12 @@
   <div id="app" hidden>
     <iframe id="game-frame" title="心動之城 3D 世界" allow="fullscreen; autoplay" src="about:blank"></iframe>
     <header class="hud"><div class="brand"><b>心動之城</b><span id="place">園區散步</span></div><div class="balances"><span id="identity"></span><button class="coin" data-view="wallet" aria-label="我的錢包"><span class="coin-emblem">T</span><b id="coins">0</b><small>金幣</small></button><span id="partner-status" class="small"></span></div><button id="logout" class="quiet">登出</button></header>
-    <nav class="toolbar" aria-label="遊戲功能"><button data-view="wardrobe">衣櫃</button><button data-view="shop">小商店</button><button data-view="bank">共同銀行</button><button data-view="furniture">布置</button><button data-view="battleship">海戰棋</button><button data-view="ink">墨水大戰</button><button data-view="fold">對折墨水戰</button><button data-view="dessert">甜點廚房</button><button data-view="daily">花園委託</button><button data-view="zoo">動物手帳</button><button data-view="guide">城市導覽</button><button data-command="bicycle" id="bicycle-toggle">騎腳踏車 B</button><button data-command="map">全景</button><button data-command="night">日夜</button></nav>
+    <nav class="toolbar" aria-label="遊戲功能"><button data-view="wardrobe">衣櫃</button><button data-view="shop">小商店</button><button data-view="bank">共同銀行</button><button data-view="furniture">布置</button><button data-view="battleship">海戰棋</button><button data-view="ink">墨水大戰</button><button data-view="fold">對折墨水戰</button><button data-view="dessert">甜點廚房</button><button data-view="daily">花園委託</button><button data-view="zoo">動物手帳</button><button data-view="guide">城市導覽</button><button data-command="bicycle" id="bicycle-toggle">騎腳踏車 B</button><button data-command="map">全景</button><button data-command="night" id="night-toggle">日夜</button><button data-view="controls">操作指南 H</button><button id="fullscreen-toggle">全螢幕 F</button></nav>
     <div id="loading" class="loading">正在準備我們的世界…<small>第一次載入需要下載 3D 場景</small></div>
-    <div class="world-controls"><button data-command="rotate_left" aria-label="視角向左">↶</button><button data-command="rotate_right" aria-label="視角向右">↷</button><button data-command="zoom_in" aria-label="放大">＋</button><button data-command="zoom_out" aria-label="縮小">−</button></div>
+    <div class="world-controls"><button data-command="camera_reset" title="回正視角 C" aria-label="回正視角">⌂</button><button data-command="rotate_left" aria-label="視角向左">↶</button><button data-command="rotate_right" aria-label="視角向右">↷</button><button data-command="zoom_in" aria-label="放大">＋</button><button data-command="zoom_out" aria-label="縮小">−</button></div>
     <div id="touch-pad" aria-label="拖曳以移動"><div id="stick"></div></div><button id="interact" class="interact" data-command="interact">互動 E</button>
     <div id="walk-guide" hidden></div><div id="connection" role="status" hidden>連線中斷，正在重連；金幣與配置暫時不能修改。</div>
-    <div id="rotate-hint">手機橫向遊玩會更舒適</div>
+    <div id="world-tip" role="status"></div><button id="touch-sprint" aria-pressed="false">快走</button><button id="cancel-guide" hidden>取消指引</button><div id="coin-feedback" aria-live="polite"></div><div id="rotate-hint">手機橫向遊玩會更舒適</div>
   </div>
   <dialog id="modal"><div class="modal-head"><div><span class="eyebrow" id="modal-kicker">OUR LITTLE WORLD</span><h2 id="modal-title"></h2></div><button id="close-modal" class="close" aria-label="關閉">×</button></div><div id="modal-content"></div></dialog>
   <div id="toast" role="status" hidden></div>

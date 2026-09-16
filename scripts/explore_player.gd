@@ -2,6 +2,7 @@ extends CharacterBody3D
 var enabled := true
 var spawn_position := Vector3(0,1,34)
 var touch_input := Vector2.ZERO
+var touch_sprint := false
 var model: Node3D
 var riding := false
 var cycle_speed := 0.0
@@ -43,7 +44,7 @@ func _physics_process(delta: float) -> void:
 	right.y = 0
 	forward.y = 0
 	var direction := (right.normalized() * input.x + forward.normalized() * input.y).limit_length(1.0)
-	var speed := 8.0 if Input.is_physical_key_pressed(KEY_SHIFT) else 5.0
+	var speed := 8.0 if Input.is_physical_key_pressed(KEY_SHIFT) or touch_sprint else 5.0
 	if riding:
 		var target_speed := 9.0*minf(input.length(),1.0)
 		if direction.length()>0.1:

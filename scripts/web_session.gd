@@ -30,6 +30,7 @@ func _process(delta: float) -> void:
 		var input = JSON.parse_string(bridge.input())
 		if input is Dictionary:
 			host.player.touch_input = Vector2(input.get("x",0),input.get("y",0))
+			host.player.touch_sprint = bool(input.get("sprint",false))
 		var list = JSON.parse_string(bridge.commands())
 		if list is Array:
 			for command in list:
@@ -39,7 +40,7 @@ func _process(delta: float) -> void:
 		timer += delta
 		if timer >= 0.2:
 			timer = 0
-			bridge.position(JSON.stringify({"x":host.player.position.x,"z":host.player.position.z,"yaw":host.player.model.rotation.y,"scene":"home" if host.inside else "park","activity":host.current.get("title",""),"riding":host.player.riding}))
+			bridge.position(JSON.stringify({"x":host.player.position.x,"z":host.player.position.z,"yaw":host.player.model.rotation.y,"scene":"home" if host.inside else "park","activity":host.current.get("title",""),"riding":host.player.riding,"night":host.night,"overview":host.overview}))
 	if is_instance_valid(remote):
 		var distance := remote.position.distance_to(remote_target)
 		remote.position = remote.position.lerp(remote_target,minf(delta*10,1))
@@ -80,6 +81,10 @@ func _handle(command: Dictionary) -> void:
 		"bicycle": host.player.toggle_bicycle()
 		"map": host._action("map")
 		"night": host._action("night")
+		"camera_reset":
+			host.camera_yaw = 0.45
+			host.camera_zoom = 1.0
+			host.overview = false
 		"rotate_left": host.camera_yaw -= 0.3
 		"rotate_right": host.camera_yaw += 0.3
 		"zoom_in": host.camera_zoom = maxf(0.65,host.camera_zoom-0.1)

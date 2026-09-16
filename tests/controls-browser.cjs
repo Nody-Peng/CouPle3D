@@ -1,0 +1,15 @@
+const {chromium}=require('playwright');const assert=require('node:assert/strict');const path=require('node:path');
+(async()=>{const {createApp}=await import('../server/server.mjs');const {server}=createApp({file:path.resolve('.runtime/controls-'+Date.now()+'.json')});await new Promise(r=>server.listen(8794,'127.0.0.1',r));let browser;try{
+ browser=await chromium.launch({channel:'chrome',headless:true,args:['--enable-webgl','--ignore-gpu-blocklist','--enable-unsafe-swiftshader']});const p=await browser.newPage({viewport:{width:1280,height:800}}),errors=[];p.on('pageerror',e=>errors.push(e.message));
+ await p.goto('http://127.0.0.1:8794');await p.locator('button[value="a"]').click();await p.locator('#loading').waitFor({state:'hidden',timeout:90000});await p.waitForTimeout(500);
+ await p.keyboard.press('h');await p.locator('#controls-back').waitFor();await p.screenshot({path:'.runtime/controls-help.png'});await p.locator('#quiet-motion').check();assert.equal(await p.evaluate(()=>localStorage.getItem('together-quiet-motion')),'true');
+ await p.keyboard.press('Escape');await p.waitForFunction(()=>!view&&document.activeElement.id==='game-frame');
+ await p.keyboard.press('m');await p.waitForFunction(()=>position.overview===true);await p.keyboard.press('c');await p.waitForFunction(()=>position.overview===false);
+ await p.keyboard.press('n');await p.waitForFunction(()=>position.night===true);assert.equal(await p.locator('#night-toggle').getAttribute('aria-pressed'),'true');
+ await p.keyboard.press('f');await p.waitForFunction(()=>!!document.fullscreenElement);await p.keyboard.press('f');await p.waitForFunction(()=>!document.fullscreenElement);
+ await p.locator('[data-view="guide"]').click();await p.locator('[data-guide-x]').first().click();await p.locator('#cancel-guide').waitFor({state:'visible'});await p.locator('#cancel-guide').click();assert.equal(await p.evaluate(()=>guideTarget),null);
+ await p.evaluate(()=>{const n=structuredClone(state);n.user.coins+=7;accept(n);});assert.equal(await p.locator('#coin-feedback').textContent(),'+7 金幣');
+ const c=await browser.newContext({viewport:{width:844,height:390},hasTouch:true,isMobile:true});const t=await c.newPage();t.on('pageerror',e=>errors.push(e.message));await t.goto('http://127.0.0.1:8794');await t.locator('button[value="b"]').click();await t.locator('#loading').waitFor({state:'hidden',timeout:90000});
+ await t.locator('#touch-sprint').click();assert.equal(await t.evaluate(()=>JSON.parse(togetherBridge.input()).sprint),true);await t.locator('[data-view="controls"]').click();assert.equal(await t.evaluate(()=>JSON.parse(togetherBridge.input()).sprint),false);await t.locator('#close-modal').click();await t.screenshot({path:'.runtime/controls-touch.png'});
+ assert.deepEqual(errors,[]);console.log('PASS help/Escape, camera reset, day/night, fullscreen, cancel guidance, coin feedback, touch sprint reset; no page errors');
+ }finally{await browser?.close();server.closeAllConnections();server.close();}})().catch(e=>{console.error(e);process.exit(1)});
