@@ -33,13 +33,55 @@ const DESSERT_ORDERS=[
   {name:'心動招牌甜點',hint:'把品質、默契和小搗蛋平衡好',tags:['prep','heat','finish','sync']}
 ];
 const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+const numberBoard=()=>{
+  const board=Array.from({length:48},(_,i)=>i+1);
+  for(let i=board.length-1;i>0;i--){const j=crypto.randomInt(i+1);[board[i],board[j]]=[board[j],board[i]];}
+  return board;
+};
+const nextNumberRound=g=>{
+  g.board=numberBoard();g.target=g.board[crypto.randomInt(g.board.length)];g.lockUntil={a:0,b:0};
+};
+const FLICK_RULES={width:800,height:480,puckRadius:16,goal:{x:400,y:240,radius:72},maxSpeed:24,goalScore:8};
+const flickPucks=()=>{
+  const pucks=[];
+  for(const owner of ['a','b'])for(let i=0;i<8;i++)pucks.push({id:owner+i,owner,x:(owner==='a'?92:708)+(i%2)*42,y:114+Math.floor(i/2)*84,scored:false});
+  return pucks;
+};
+const simulateFlick=(pucks,launched,vx,vy)=>{
+  const r=FLICK_RULES.puckRadius,w=FLICK_RULES.width,h=FLICK_RULES.height,vel=Object.fromEntries(pucks.filter(p=>!p.scored).map(p=>[p.id,{x:0,y:0}]));
+  vel[launched.id]={x:vx,y:vy};const frames=[],scored=[];
+  for(let step=0;step<260;step++){
+    let moving=false;
+    for(const puck of pucks){
+      if(puck.scored)continue;const v=vel[puck.id];puck.x+=v.x;puck.y+=v.y;
+      if(puck.x<r){puck.x=r;v.x=Math.abs(v.x)*.84;}else if(puck.x>w-r){puck.x=w-r;v.x=-Math.abs(v.x)*.84;}
+      if(puck.y<r){puck.y=r;v.y=Math.abs(v.y)*.84;}else if(puck.y>h-r){puck.y=h-r;v.y=-Math.abs(v.y)*.84;}
+    }
+    const active=pucks.filter(p=>!p.scored);
+    for(let i=0;i<active.length;i++)for(let j=i+1;j<active.length;j++){
+      const a=active[i],b=active[j],dx=b.x-a.x,dy=b.y-a.y,dist=Math.hypot(dx,dy)||.001,min=r*2;
+      if(dist>=min)continue;const nx=dx/dist,ny=dy/dist,overlap=(min-dist)/2;a.x-=nx*overlap;a.y-=ny*overlap;b.x+=nx*overlap;b.y+=ny*overlap;
+      const va=vel[a.id],vb=vel[b.id],relative=(va.x-vb.x)*nx+(va.y-vb.y)*ny;
+      if(relative>0){const impulse=relative*.94;va.x-=impulse*nx;va.y-=impulse*ny;vb.x+=impulse*nx;vb.y+=impulse*ny;}
+    }
+    for(const puck of pucks){
+      if(puck.scored)continue;const v=vel[puck.id],inside=Math.hypot(puck.x-FLICK_RULES.goal.x,puck.y-FLICK_RULES.goal.y)<=FLICK_RULES.goal.radius-r;
+      if(inside){puck.scored=true;v.x=0;v.y=0;scored.push(puck.id);continue;}
+      v.x*=.976;v.y*=.976;if(Math.hypot(v.x,v.y)<.075){v.x=0;v.y=0;}else moving=true;
+    }
+    if(step%4===0)frames.push(pucks.filter(p=>!p.scored).map(p=>[p.id,+p.x.toFixed(2),+p.y.toFixed(2)]));
+    if(!moving)break;
+  }
+  for(const puck of pucks){puck.x=+puck.x.toFixed(2);puck.y=+puck.y.toFixed(2);}
+  return {frames:frames.slice(0,66),scored};
+};
 const inkCells = (cell, brush) => {
   const x=cell%7,y=Math.floor(cell/7),shape=brush==='splash'?[[0,0],[1,0],[-1,0],[0,1],[0,-1]]:brush==='heart'?[[0,0],[-1,-1],[1,-1],[-1,1],[1,1]]:[[0,0]];
   return shape.map(([dx,dy])=>({x:x+dx,y:y+dy})).filter(p=>p.x>=0&&p.x<7&&p.y>=0&&p.y<7).map(p=>p.y*7+p.x);
 };
 export function initialState() {
   const user = (name,base) => ({name,coins:120,avatar:{base,hat:'none',glasses:'none',bag:'none'},inventory:[],daily:{day:'',count:0},receipts:[]});
-  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[],goals:[],proposals:[],bankStats:{totalDeposited:0,goalsCompleted:0}},game:null,ink:null,dessert:null};
+  return {version:1,users:{a:user('小晴','female-a'),b:user('阿澄','male-a')},home:{bank:0,archived:false,layout:[],previous:[],revision:0,ledger:[],goals:[],proposals:[],bankStats:{totalDeposited:0,goalsCompleted:0}},game:null,ink:null,dessert:null,numberHunt:null,flick:null};
 }
 export class Store {
   constructor(file, options={}) {
@@ -47,6 +89,8 @@ export class Store {
     need(this.state.version===1,'不支援的存檔版本',500);
     this.state.ink ??= null;
     this.state.dessert ??= null;
+    this.state.numberHunt ??= null;
+    this.state.flick ??= null;
     this.normalizeBank();
     this.presence={}; this.tasks={}; this.editLock=null;
     if(!fs.existsSync(file)) this.persist();
@@ -112,7 +156,7 @@ export class Store {
       sharedInventory:state.home.archived?[]:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner==='shared'),
       homeInventory:Object.values(state.users).flatMap(u=>u.inventory).filter(x=>x.owner===id||x.owner==='shared'||state.home.layout.some(p=>p.instance===x.instance)),
       quiz:state.quiz?{id:state.quiz.id,answers:state.quiz.answers[id],partnerReady:!!state.quiz.answers[partner],results:state.quiz.answers.a&&state.quiz.answers.b?state.quiz.answers:null}:null,quizQuestions:QUIZ,
-      game,fold:foldSnapshot(this.state.fold,id),ink:this.inkSnapshot(id),dessert:this.dessertSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
+      game,fold:foldSnapshot(this.state.fold,id),ink:this.inkSnapshot(id),dessert:this.dessertSnapshot(id),numberHunt:this.numberHuntSnapshot(id),flick:this.flickSnapshot(id),bank:this.bankSnapshot(id),task:this.tasks[id]||null,today:day(this.now())};
   }
   inkSnapshot(id) {
     const g=this.state.ink;if(!g)return null;
@@ -125,6 +169,15 @@ export class Store {
     const current=g.orders[Math.min(g.round-1,g.orders.length-1)]||g.orders.at(-1);
     return {id:g.id,status:g.status,round:g.round,maxRounds:g.maxRounds,winner:g.winner,reason:g.reason,quality:g.quality,harmony:g.harmony,chaos:g.chaos,scores:g.scores,
       current,orders:g.orders,log:g.log.slice(-8),memory:g.memory||null,rewards:g.rewards||null,cards:Object.values(DESSERT_CARDS),ownAction:g.actions[id],partnerReady:!!g.actions[other(id)]};
+  }
+  numberHuntSnapshot(id) {
+    const g=this.state.numberHunt;if(!g)return null;
+    return {id:g.id,status:g.status,invitedBy:g.invitedBy,round:g.round,target:g.target,board:g.board,scores:g.scores,winner:g.winner,reason:g.reason,last:g.last,
+      history:(g.history||[]).slice(-8),lockedUntil:g.lockUntil?.[id]||0,goal:g.goal||5,rewards:g.rewards||null};
+  }
+  flickSnapshot(id) {
+    const g=this.state.flick;if(!g)return null;
+    return {id:g.id,status:g.status,invitedBy:g.invitedBy,turn:g.turn,pucks:g.pucks,scores:g.scores,winner:g.winner,reason:g.reason,shots:g.shots,last:g.last,rules:FLICK_RULES,rewards:g.rewards||null};
   }
   resolveDessert(g) {
     const a=DESSERT_CARDS[g.actions.a],b=DESSERT_CARDS[g.actions.b];need(a&&b,'甜點行動格式錯誤');
@@ -305,13 +358,76 @@ export class Store {
           const g=this.dessertMatch(data);need(g.status==='playing','甜點廚房已結束');need(!g.actions[id],'你已經選好本回合行動');need(DESSERT_CARDS[data.card],'甜點行動不存在');g.actions[id]=data.card;if(g.actions.a&&g.actions.b)this.resolveDessert(g);break;
         }
         case 'dessert/surrender': {const g=this.dessertMatch(data);need(g.status!=='finished','甜點廚房已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;}
+        case 'number/new': {
+          this.activeHome();need(!this.state.numberHunt||this.state.numberHunt.status==='finished','已有進行中的找數字競速');
+          this.state.numberHunt={id:crypto.randomUUID(),status:'waiting',invitedBy:id,round:0,target:null,board:[],scores:{a:0,b:0},winner:null,reason:null,last:null,history:[],lockUntil:{a:0,b:0},goal:5,rewards:null};break;
+        }
+        case 'number/accept': {
+          const g=this.numberHuntMatch(data);need(g.status==='waiting','邀請已失效');need(g.invitedBy!==id,'請等待伴侶接受邀請');
+          g.status='playing';g.round=1;nextNumberRound(g);break;
+        }
+        case 'number/decline': {
+          const g=this.numberHuntMatch(data);need(g.status==='waiting','邀請已失效');need(g.invitedBy!==id,'只有受邀者可以婉拒');
+          g.status='finished';g.reason='declined';break;
+        }
+        case 'number/cancel': {
+          const g=this.numberHuntMatch(data);need(g.status==='waiting','邀請已失效');need(g.invitedBy===id,'只有邀請者可以取消');
+          g.status='finished';g.reason='cancelled';break;
+        }
+        case 'number/pick': {
+          const g=this.numberHuntMatch(data);need(g.status==='playing','找數字競速已結束');need(data.round===g.round,'這一題已經換了');
+          need(integer(data.value,1,48)&&g.board.includes(data.value),'數字不在題目中');need(this.now()>=(g.lockUntil[id]||0),'答錯後請停一下再找');
+          const correct=data.value===g.target;g.last={player:id,value:data.value,correct,round:g.round,at:this.now()};g.history.push(g.last);
+          if(!correct){g.lockUntil[id]=this.now()+500;break;}
+          g.scores[id]++;
+          if(g.scores[id]>=g.goal){
+            g.status='finished';g.reason='completed';g.winner=id;g.rewards={[id]:30,[other(id)]:25};this.state.users[id].coins+=30;this.state.users[other(id)].coins+=25;
+          } else {g.round++;nextNumberRound(g);}
+          break;
+        }
+        case 'number/surrender': {
+          const g=this.numberHuntMatch(data);need(g.status==='playing','找數字競速已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;
+        }
+        case 'flick/new': {
+          this.activeHome();need(!this.state.flick||this.state.flick.status==='finished','已有進行中的圓片彈射');
+          this.state.flick={id:crypto.randomUUID(),status:'waiting',invitedBy:id,turn:null,pucks:flickPucks(),scores:{a:0,b:0},winner:null,reason:null,shots:0,last:null,rewards:null};break;
+        }
+        case 'flick/accept': {
+          const g=this.flickMatch(data);need(g.status==='waiting','邀請已失效');need(g.invitedBy!==id,'請等待伴侶接受邀請');g.status='playing';g.turn=g.invitedBy;break;
+        }
+        case 'flick/decline': {
+          const g=this.flickMatch(data);need(g.status==='waiting','邀請已失效');need(g.invitedBy!==id,'只有受邀者可以婉拒');g.status='finished';g.reason='declined';break;
+        }
+        case 'flick/cancel': {
+          const g=this.flickMatch(data);need(g.status==='waiting','邀請已失效');need(g.invitedBy===id,'只有邀請者可以取消');g.status='finished';g.reason='cancelled';break;
+        }
+        case 'flick/shoot': {
+          const g=this.flickMatch(data);need(g.status==='playing','圓片彈射已結束');need(g.turn===id,'還沒輪到你');
+          const puck=g.pucks.find(p=>p.id===data.puckId);need(puck&&puck.owner===id&&!puck.scored,'請選擇自己的場上圓片');
+          need(Number.isFinite(data.vx)&&Number.isFinite(data.vy),'彈射方向無效');const speed=Math.hypot(data.vx,data.vy);need(speed>=1.5&&speed<=FLICK_RULES.maxSpeed,'拖曳距離太短或力道太大');
+          const from=g.pucks.filter(p=>!p.scored).map(p=>[p.id,p.x,p.y]),result=simulateFlick(g.pucks,puck,data.vx,data.vy);g.shots++;
+          g.scores={a:g.pucks.filter(p=>p.owner==='a'&&p.scored).length,b:g.pucks.filter(p=>p.owner==='b'&&p.scored).length};
+          g.last={key:g.id+':'+g.shots,player:id,puck:puck.id,from,frames:result.frames,scored:result.scored};
+          const complete=['a','b'].filter(pid=>g.scores[pid]>=FLICK_RULES.goalScore);
+          if(complete.length){
+            g.status='finished';g.reason='completed';g.winner=complete.length===2?'draw':complete[0];
+            if(g.winner==='draw'){g.rewards={a:38,b:38};this.state.users.a.coins+=38;this.state.users.b.coins+=38;}
+            else {g.rewards={[g.winner]:45,[other(g.winner)]:35};this.state.users[g.winner].coins+=45;this.state.users[other(g.winner)].coins+=35;}
+          } else g.turn=other(id);
+          break;
+        }
+        case 'flick/surrender': {
+          const g=this.flickMatch(data);need(g.status==='playing','圓片彈射已結束');g.status='finished';g.reason='surrender';g.winner=other(id);break;
+        }
         default: throw new GameError('不支援的操作',404);
       }
-    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','bank/gift':'送禮轉帳','bank/proposal/approve':'共同提案完成','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','dessert/play':'甜點廚房完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
+    }, ({purchase:'購買：'+(CATALOG_MAP[data.item]?.name||''),'bank/deposit':'存入共同銀行','bank/gift':'送禮轉帳','bank/proposal/approve':'共同提案完成','game/fire':'海戰棋完賽獎勵','ink/paint':'墨水大戰完賽獎勵','dessert/play':'甜點廚房完賽獎勵','number/pick':'找數字競速完賽獎勵','flick/shoot':'圓片彈射完賽獎勵','zoo/stamp':'動物園手帳獎勵'})[action]||'遊戲獎勵');
   }
   match(data) {const g=this.state.game;need(g&&g.id===data.gameId,'對局已更新，請重新整理');return g;}
   inkMatch(data) {const g=this.state.ink;need(g&&g.id===data.gameId,'墨水對局已更新，請重新整理');return g;}
   dessertMatch(data) {const g=this.state.dessert;need(g&&g.id===data.gameId,'甜點廚房已更新，請重新整理');return g;}
+  numberHuntMatch(data) {const g=this.state.numberHunt;need(g&&g.id===data.gameId,'找數字題目已更新，請重新整理');return g;}
+  flickMatch(data) {const g=this.state.flick;need(g&&g.id===data.gameId,'圓片桌已更新，請重新整理');return g;}
   layoutCommand(id,action,data) {
     this.activeHome();const lock=this.liveLock();
     if(action==='layout/lock'){need(!lock||lock.user===id,'伴侶正在布置，請稍候',409);this.editLock={user:id,expires:this.now()+90000};return;}

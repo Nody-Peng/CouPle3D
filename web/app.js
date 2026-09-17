@@ -19,7 +19,7 @@ function accept(next) {
   $('identity').textContent=state.user.name;$('coins').textContent=state.user.coins;
   $('partner-status').textContent=state.partner.name+(state.partner.online?' · 在線':' · 暫時離線');
   command('state',{user_id:state.user.id,avatar:avatarDraft||state.user.avatar,partner:state.partner,layout:layoutDraft||state.home.layout,inventory:state.homeInventory,archived:state.home.archived});
-  const signature=JSON.stringify([state.user,state.home.bank,state.home.archived,state.home.revision,state.home.lock?.user,state.game,state.ink,state.dessert,state.fold,state.bank,state.quiz,state.task,state.partner.online]);
+  const signature=JSON.stringify([state.user,state.home.bank,state.home.archived,state.home.revision,state.home.lock?.user,state.game,state.ink,state.dessert,state.numberHunt,state.flick,state.fold,state.bank,state.quiz,state.task,state.partner.online]);
   if(view&&signature!==lastSignature)render();lastSignature=signature;
 }
 function connectEvents() {

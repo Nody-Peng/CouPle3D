@@ -528,6 +528,8 @@ func _home() -> void:
 	_bookcase(Vector3(-5,0,13),2.2)
 	_bookcase(Vector3(5,0,13),2.2)
 	_activity("tabletop","遊戲室 · 桌遊時光","同一張桌子，裝得下海戰棋、卡牌和更多雙人遊戲。\n預定玩法：私人雙人桌遊房。",Vector3(0,0,4.5))
+	_activity("numberhunt","遊戲室 · 找數字競速","同一張亂序數字紙，看看誰能先找到目標。\n五分制雙人眼力競速。",Vector3(4.6,0,5.2))
+	_activity("flick","遊戲室 · 圓片彈射","往後拉、放手彈射，利用碰撞把同色圓片送進中央。\n八枚全進圈就獲勝。",Vector3(-4.6,0,5.2))
 	# Creative studio / reading lounge.
 	_rug(Vector3(14,0,10),Vector2(10,11),Color("c1a994"))
 	_bookcase(Vector3(10,0,15.8),3)

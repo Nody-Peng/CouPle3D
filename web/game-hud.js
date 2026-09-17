@@ -15,7 +15,7 @@ const hudClose=closeView;closeView=async function(){await hudClose();document.bo
 $('close-modal').onclick=()=>closeView();
 $('modal').addEventListener('close',()=>document.body.classList.remove('panel-open'));
 // Categories remain a single accessible tab order; no duplicate action handlers.
-const menuGroups=[['我的生活',['wardrobe','shop','bank','furniture']],['一起玩',['battleship','ink','fold','dessert']],['探索與收藏',['daily','zoo']],['操作與設定',['controls']]];
+const menuGroups=[['我的生活',['wardrobe','shop','bank','furniture']],['一起玩',['numberhunt','flick','battleship','ink','fold','dessert']],['探索與收藏',['daily','zoo']],['操作與設定',['controls']]];
 for(const [label,ids] of menuGroups){
  const section=document.createElement('section');section.className='menu-section';const heading=document.createElement('h3');heading.textContent=label;section.append(heading);
  for(const id of ids){const button=$('game-menu').querySelector(`[data-view="${id}"]`);if(button)section.append(button);}

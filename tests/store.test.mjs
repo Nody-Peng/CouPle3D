@@ -347,3 +347,39 @@ test('fold v2 surrender clears unrevealed ink without paying rewards',t=>{
  assert.deepEqual(s.state.fold.pending,{a:null,b:null});assert.equal(s.state.fold.shots.length,0);
  assert.equal(s.state.users.a.coins,120);assert.equal(s.state.users.b.coins,120);
 });
+test('number hunt invitation is private, permissioned and survives restart',t=>{
+ const {store:s,file}=fixture(t);s.command('a','number/new');const gameId=s.state.numberHunt.id;
+ assert.equal(s.snapshot('b').numberHunt.status,'waiting');assert.equal(s.snapshot('b').numberHunt.invitedBy,'a');
+ assert.throws(()=>s.command('a','number/accept',{gameId}),/等待伴侶/);
+ const restored=new Store(file);restored.command('b','number/accept',{gameId});
+ const game=restored.snapshot('a').numberHunt;
+ assert.equal(game.status,'playing');assert.equal(game.round,1);assert.equal(game.board.length,48);
+ assert.deepEqual([...game.board].sort((a,b)=>a-b),Array.from({length:48},(_,i)=>i+1));assert.ok(game.board.includes(game.target));
+});
+test('number hunt locks wrong guesses and pays a completed match exactly once',t=>{
+ const {store:s,file,tick}=fixture(t);s.command('a','number/new');const gameId=s.state.numberHunt.id;s.command('b','number/accept',{gameId});
+ let game=s.state.numberHunt,wrong=game.board.find(n=>n!==game.target);s.command('a','number/pick',{gameId,round:game.round,value:wrong});
+ assert.equal(s.state.numberHunt.scores.a,0);assert.throws(()=>s.command('a','number/pick',{gameId,round:game.round,value:game.target}),/停一下/);tick(501);
+ for(let point=0;point<5;point++){game=s.state.numberHunt;s.command('a','number/pick',{gameId,round:game.round,value:game.target});}
+ assert.equal(s.state.numberHunt.status,'finished');assert.equal(s.state.numberHunt.winner,'a');assert.deepEqual(s.state.numberHunt.rewards,{a:30,b:25});
+ assert.equal(s.state.users.a.coins,150);assert.equal(s.state.users.b.coins,145);
+ const restored=new Store(file);assert.throws(()=>restored.command('a','number/pick',{gameId,round:restored.state.numberHunt.round,value:restored.state.numberHunt.target}),/結束/);
+ assert.equal(restored.state.users.a.coins,150);assert.equal(restored.state.users.b.coins,145);
+});
+test('flick table invitation, turns and server physics survive reconnect',t=>{
+ const {store:s,file}=fixture(t);s.command('a','flick/new');const gameId=s.state.flick.id;
+ assert.throws(()=>s.command('a','flick/accept',{gameId}),/等待伴侶/);s.command('b','flick/accept',{gameId});
+ assert.equal(s.state.flick.turn,'a');assert.throws(()=>s.command('b','flick/shoot',{gameId,puckId:'b1',vx:-18,vy:4}),/輪到/);
+ const puck=s.state.flick.pucks.find(p=>p.id==='a1'),dx=400-puck.x,dy=240-puck.y,length=Math.hypot(dx,dy);
+ s.command('a','flick/shoot',{gameId,puckId:puck.id,vx:dx/length*18,vy:dy/length*18});
+ assert.equal(s.state.flick.scores.a,1);assert.equal(s.state.flick.turn,'b');assert.ok(s.state.flick.last.frames.length>1);assert.deepEqual(s.state.flick.last.scored,['a1']);
+ const restored=new Store(file);assert.equal(restored.snapshot('b').flick.scores.a,1);assert.equal(restored.snapshot('b').flick.turn,'b');assert.throws(()=>restored.command('b','flick/shoot',{gameId,puckId:'a0',vx:10,vy:0}),/自己的/);
+});
+test('flick table completion pays once and surrender pays nothing',t=>{
+ const first=fixture(t),s=first.store;s.command('a','flick/new');const gameId=s.state.flick.id;s.command('b','flick/accept',{gameId});
+ for(const puck of s.state.flick.pucks.filter(p=>p.owner==='a').slice(0,7))puck.scored=true;s.state.flick.scores.a=7;
+ const last=s.state.flick.pucks.find(p=>p.id==='a7');last.x=330;last.y=240;s.command('a','flick/shoot',{gameId,puckId:last.id,vx:4,vy:0});
+ assert.equal(s.state.flick.status,'finished');assert.equal(s.state.flick.winner,'a');assert.deepEqual(s.state.flick.rewards,{a:45,b:35});assert.equal(s.state.users.a.coins,165);assert.equal(s.state.users.b.coins,155);
+ const restored=new Store(first.file);assert.throws(()=>restored.command('a','flick/shoot',{gameId,puckId:last.id,vx:4,vy:0}),/結束/);assert.equal(restored.state.users.a.coins,165);
+ const second=fixture(t),s2=second.store;s2.command('b','flick/new');const otherGame=s2.state.flick.id;s2.command('a','flick/accept',{gameId:otherGame});s2.command('b','flick/surrender',{gameId:otherGame});assert.equal(s2.state.users.a.coins,120);assert.equal(s2.state.users.b.coins,120);
+});
