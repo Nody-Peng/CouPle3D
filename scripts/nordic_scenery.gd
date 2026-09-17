@@ -32,12 +32,13 @@ static func pave(parent: Node3D, center: Vector3, size: Vector2) -> void:
 	for i in range(placements.size()):
 		multi.set_instance_transform(i,Transform3D(Basis.IDENTITY,placements[i]))
 		var t := fmod(absf(sin(i*13.71+center.x)*917.3),1.0)
-		multi.set_instance_color(i,Color("c28f5f").lerp(Color("dba774"),t))
+		multi.set_instance_color(i,[Color("d99760"),Color("e3a66b"),Color("d09059")][mini(int(t*3),2)])
 	var node := MultiMeshInstance3D.new()
 	node.multimesh = multi
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
 	material.roughness = 0.95
+	material.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	node.material_override = material
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	parent.add_child(node)
@@ -54,11 +55,11 @@ func build(source: Node3D) -> void:
 func surface_materials() -> void:
 	for child in host.world.get_children():
 		if not child is MeshInstance3D or not child.material_override is StandardMaterial3D: continue
-		var color: Color = child.material_override.albedo_color
+		var color: Color = child.get_meta("source_color",child.material_override.albedo_color)
 		if color in [Color("63b4bd"),Color("67acb8"),Color("6ec5cf")]:
 			var mat := ShaderMaterial.new()
 			mat.shader = preload("res://scripts/nordic_water.gdshader")
-			mat.set_shader_parameter("water_color",Color("0a94c9"))
+			mat.set_shader_parameter("water_color",Color("009bd0"))
 			child.material_override = mat
 		elif color==Color("91a38a"):
 			var mat := ShaderMaterial.new()
@@ -210,7 +211,7 @@ func natural_pond() -> void:
 	var water: MeshInstance3D = host._mesh(self,surface.commit(),Vector3.ZERO,Color("078fc7"))
 	var mat := ShaderMaterial.new()
 	mat.shader = preload("res://scripts/nordic_water.gdshader")
-	mat.set_shader_parameter("water_color",Color("078fc7"))
+	mat.set_shader_parameter("water_color",Color("009bd0"))
 	water.material_override = mat
 
 static func garden_path(source: Node3D, points: Array[Vector3], width: float) -> void:

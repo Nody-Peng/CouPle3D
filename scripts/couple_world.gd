@@ -8,6 +8,7 @@ const TEAL := Color("239c96")
 const CORAL := Color("df7661")
 const GOLD := Color("f6c75e")
 const INK := Color("344c59")
+const RetroPalette = preload("res://scripts/retro_palette.gd")
 var transitioning := false
 var guiding := false
 var camera_yaw := 0.45
@@ -65,8 +66,10 @@ func _material(color: Color, glow := false) -> StandardMaterial3D:
 	if material_cache.has(key):
 		return material_cache[key]
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = color
-	mat.roughness = 0.8
+	mat.albedo_color = RetroPalette.color(color)
+	mat.roughness = 1.0
+	mat.diffuse_mode = BaseMaterial3D.DIFFUSE_TOON
+	mat.specular_mode = BaseMaterial3D.SPECULAR_DISABLED
 	if glow:
 		mat.emission_enabled = true
 		mat.emission = color
@@ -78,6 +81,7 @@ func _mesh(parent: Node3D, mesh: Mesh, pos: Vector3, color: Color) -> MeshInstan
 	var node := MeshInstance3D.new()
 	node.mesh = mesh
 	node.material_override = _material(color)
+	node.set_meta("source_color", color)
 	parent.add_child(node)
 	node.position = pos
 	return node
@@ -136,19 +140,19 @@ func _setup_lighting() -> void:
 	var env := WorldEnvironment.new()
 	environment = Environment.new()
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("b9d5dd")
+	environment.background_color = Color("82bfd5")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("e3f0ff")
-	environment.ambient_light_energy = 0.43
+	environment.ambient_light_color = Color("b7c9ed")
+	environment.ambient_light_energy = 0.28
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
-	environment.adjustment_enabled = true
-	environment.adjustment_saturation = 1.04
+	environment.adjustment_enabled = false
 	env.environment = environment
 	add_child(env)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-48, -32, 0)
-	sun.light_color = Color("fff5e5")
-	sun.light_energy = 0.85
+	sun.light_color = Color("fffaf0")
+	# The shadow-free Web renderer needs more direct light to match the desktop palette.
+	sun.light_energy = 0.85 if low_detail else 0.55
 	sun.shadow_enabled = not low_detail
 	add_child(sun)
 
@@ -199,7 +203,7 @@ func _foliage(pos: Vector3, radius: float, color: Color) -> void:
 func _tree(pos: Vector3, color := Color("4d9145")) -> void:
 	# Keep blossom and autumn trees distinct; green crowns use a deeper woodland palette.
 	if color.g > color.r and color.g > color.b:
-		color = Color("438849").lerp(Color("679d42"),floorf(fposmod(pos.x*0.13+pos.z*0.17,1.0)*3.0)/2.0)
+		color = [Color("388344"),Color("4a913f"),Color("629d42")][int(fposmod(pos.x*0.13+pos.z*0.17,1.0)*3.0)]
 	_round_barrier(pos+Vector3(0,1.2,0),0.45,2.4)
 	_cylinder(world, pos + Vector3(0,1,0), 0.18, 2.0, Color("995f3d"))
 	_foliage(pos + Vector3(0,2.5,0), 1.2, color)
@@ -712,9 +716,9 @@ func _action(action: String) -> void:
 			overview = not overview
 		"night":
 			night = not night
-			sun.light_energy = 0.2 if night else 0.85
-			environment.background_color = Color("27374c") if night else Color("b9d5dd")
-			environment.ambient_light_color = Color("8498bd") if night else Color("e3f0ff")
+			sun.light_energy = 0.2 if night else (0.85 if low_detail else 0.55)
+			environment.background_color = Color("27374c") if night else Color("82bfd5")
+			environment.ambient_light_color = Color("8498bd") if night else Color("b7c9ed")
 
 func _travel(home: bool) -> void:
 	if transitioning:

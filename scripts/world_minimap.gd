@@ -14,11 +14,11 @@ func _draw() -> void:
 	var extent := Vector2(42,36) if source.inside else Vector2(304,112)
 	var rect := Rect2(Vector2(12,12),size-Vector2(24,24))
 	draw_style_box(_background(), Rect2(Vector2.ZERO,size))
-	draw_rect(rect,Color("5c7e76"))
+	draw_rect(rect,Color("b98458") if source.inside else Color("58b343"))
 	var center := rect.get_center()
 	if not source.inside:
-		draw_line(Vector2(center.x,rect.position.y),Vector2(center.x,rect.end.y),Color("dbcdb4"),9)
-		draw_line(Vector2(rect.position.x,center.y+7),Vector2(rect.end.x,center.y+7),Color("dbcdb4"),7)
+		draw_line(Vector2(center.x,rect.position.y),Vector2(center.x,rect.end.y),Color("e0a066"),9)
+		draw_line(Vector2(rect.position.x,center.y+7),Vector2(rect.end.x,center.y+7),Color("e0a066"),7)
 	if source.inside:
 		for x in [-14,0,14]:
 			for z in [-10,10]:

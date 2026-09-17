@@ -1,12 +1,13 @@
 shader_type spatial;
-// A color gradient gives crowns depth even on the web preset without real-time shadows.
+render_mode specular_disabled;
+// Three canopy shades retain volume even when Web disables real-time shadows.
 uniform vec4 canopy_color : source_color = vec4(0.263,0.533,0.286,1.0);
 varying float crown_up;
 void vertex(){crown_up=NORMAL.y;}
 void fragment(){
- float light_band=smoothstep(-0.65,0.85,crown_up);
- vec3 shade=canopy_color.rgb*vec3(0.52,0.66,0.69);
- vec3 sunlit=canopy_color.rgb*vec3(1.20,1.13,0.91);
- ALBEDO=mix(shade,sunlit,light_band);
+ vec3 shade=canopy_color.rgb*vec3(0.42,0.60,0.64);
+ vec3 sunlit=mix(canopy_color.rgb,vec3(0.86,0.91,0.55),0.18);
+ vec3 leaf=mix(shade,canopy_color.rgb,step(-0.15,crown_up));
+ ALBEDO=mix(leaf,sunlit,step(0.60,crown_up));
  ROUGHNESS=1.0;
 }
