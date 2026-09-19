@@ -9,6 +9,7 @@ var movement_keys: Array[int] = []
 var interact_key := KEY_E
 var can_move := true
 var speed := 145.0
+var touch_direction := Vector2.ZERO
 
 var _base := Sprite2D.new()
 var _hair := Sprite2D.new()
@@ -67,6 +68,8 @@ func _physics_process(delta: float) -> void:
 		float(Input.is_key_pressed(movement_keys[3])) - float(Input.is_key_pressed(movement_keys[2])),
 		float(Input.is_key_pressed(movement_keys[1])) - float(Input.is_key_pressed(movement_keys[0]))
 	).normalized()
+	if touch_direction.length_squared() > 0.0:
+		direction = touch_direction.limit_length()
 	velocity = direction * speed
 	move_and_slide()
 	position.x = clampf(position.x, 70.0, 4250.0)

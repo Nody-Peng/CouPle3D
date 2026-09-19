@@ -86,7 +86,7 @@ func close() -> void:
 func _set_input() -> void:
 	for i in range(2):
 		var remote: bool=not connection.cookie.is_empty() and i!=(0 if connection.identity=="a" else 1)
-		home.players[i].can_move=not remote and not panel.visible and not home.note_panel.visible
+		home.players[i].can_move=not remote and not panel.visible and not home.note_panel.visible and not home.mobile_blocked
 		if connection.connected and not remote:
 			home.players[i].movement_keys.assign([KEY_W,KEY_S,KEY_A,KEY_D])
 			home.players[i].interact_key=KEY_E
@@ -117,6 +117,9 @@ func button(title: String, action: Callable) -> Button:
 	return node
 
 func open(key: String) -> void:
+	if home.mobile_mode and key != "photo":
+		home._mobile_panel(key)
+		return
 	if home.note_panel.visible: return
 	if key=="photo":
 		close()
@@ -126,8 +129,8 @@ func open(key: String) -> void:
 		if OS.has_feature("web"):
 			var bytes: PackedByteArray=home.get_viewport().get_texture().get_image().save_png_to_buffer()
 			JavaScriptBridge.download_buffer(bytes,"together-home.png","image/png")
-			visible=true
-			home.get_node("HomeHUD").visible=true
+			visible=not home.mobile_mode
+			home.get_node("HomeHUD").visible=not home.mobile_mode
 			home._show_toast("合照已交給瀏覽器下載")
 			return
 		var folder:=OS.get_system_dir(OS.SYSTEM_DIR_PICTURES).path_join("TogetherHome")

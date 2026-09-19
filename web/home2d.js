@@ -9,6 +9,7 @@ function enter(){
   frame.src='/game/index.html';
   logout.hidden=false;
   frame.onload=()=>frame.contentWindow?.focus();
+  window.dispatchEvent(new Event('home:entered'));
 }
 form.addEventListener('submit',async event=>{
   event.preventDefault();
@@ -24,11 +25,13 @@ form.addEventListener('submit',async event=>{
 });
 logout.addEventListener('click',async()=>{
   logout.disabled=true;
+  const previous=frame.src;
+  frame.src='about:blank';
   try{
     const response=await fetch('/api/logout',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});
     if(!response.ok)throw new Error('登出失敗，請稍後再試');
     location.reload();
-  }catch(e){logout.textContent=e.message;logout.disabled=false;}
+  }catch(e){frame.src=previous;logout.textContent=e.message;logout.disabled=false;window.homeMobile?.toast(e.message);}
 });
 fetch('/api/session',{credentials:'same-origin',cache:'no-store'})
   .then(response=>response.ok?response.json():null)

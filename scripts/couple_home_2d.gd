@@ -41,14 +41,17 @@ var current_area := 0
 var view_zoom := 0.0
 var action_button: Button
 var action_player: Node
+var mobile_mode := false
+var mobile_blocked := false
+var mobile_elapsed := 0.0
 
 func _set_view_zoom(value: float) -> void:
 	view_zoom = clampf(value,1.0,2.0) if value > 0 else 0.0
 
 func _update_camera(local: Node, delta: float) -> void:
-	var amount := view_zoom if view_zoom > 0 else (2.0 if current_area == 0 else 1.0)
+	var amount := view_zoom if view_zoom > 0 else (1.5 if mobile_mode else (2.0 if current_area == 0 else 1.0))
 	area_camera.zoom = Vector2.ONE*amount
-	var half := Vector2(720,450)/amount
+	var half := get_viewport_rect().size/2.0/amount
 	var target := Vector2(clampf(local.position.x,current_area*1440+half.x,(current_area+1)*1440-half.x),clampf(local.position.y-25,half.y,900-half.y))
 	if absf(area_camera.position.x-target.x)>720:
 		area_camera.position=target
@@ -57,6 +60,8 @@ func _update_camera(local: Node, delta: float) -> void:
 
 
 func _ready() -> void:
+	if OS.has_feature("web"):
+		mobile_mode = bool(JavaScriptBridge.eval("Boolean(window.parent.homeMobile && window.parent.homeMobile.enabled)"))
 	if has_node("/root/HUD"):
 		get_node("/root/HUD").hide()
 	_load_state()
@@ -73,6 +78,9 @@ func _ready() -> void:
 	_build_ui()
 	social=preload("res://scripts/home_social.gd").new()
 	add_child(social)
+	if mobile_mode:
+		get_node("HomeHUD").hide()
+		social.hide()
 	_update_note_preview()
 	queue_redraw()
 
@@ -357,6 +365,7 @@ func _panel_style(fill: Color, border: Color, width: int, radius: int) -> StyleB
 
 
 func _process(_delta: float) -> void:
+	if mobile_mode: _update_mobile(_delta)
 	var local=players[0 if social.connection.identity=="a" else 1] if social.connection.connected else players[0]
 	current_area=clampi(int(local.position.x/1440),0,2)
 	_update_camera(local,_delta)
@@ -453,6 +462,9 @@ func _try_interact(player: Node) -> void:
 
 
 func _open_note(author: String, source_title: String) -> void:
+	if mobile_mode:
+		_mobile_panel("note")
+		return
 	if social.connection.connected: editing_revision=int(social.connection.last_state.revision)
 	_note_author = author
 	note_title.text = source_title
@@ -495,6 +507,9 @@ func _update_note_preview() -> void:
 
 
 func _show_toast(message: String) -> void:
+	if mobile_mode:
+		JavaScriptBridge.eval("window.parent.homeMobile.toast(" + JSON.stringify(message) + ")")
+		return
 	toast_label.text = message
 	toast_label.show()
 	var tween := create_tween()
@@ -519,3 +534,37 @@ func _load_state() -> void:
 func _save_state() -> void:
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify({"shared_coins": shared_coins, "note": saved_note}, "\t"))
+
+
+func _mobile_panel(key: String) -> void:
+	JavaScriptBridge.eval("window.parent.homeMobile.openPanel(" + JSON.stringify(key) + ")")
+
+
+func _update_mobile(delta: float) -> void:
+	mobile_elapsed += delta
+	if mobile_elapsed < 0.05: return
+	mobile_elapsed = 0.0
+	var raw = JavaScriptBridge.eval("JSON.stringify(window.parent.homeMobile.consume())")
+	var input = JSON.parse_string(str(raw))
+	if not input is Dictionary: return
+	var height := clampi(int(input.get("height", 540)), 320, 900)
+	get_tree().root.content_scale_size = Vector2i(960, height)
+	mobile_blocked = bool(input.get("blocked", true))
+	social._set_input()
+	var local = players[0 if social.connection.identity == "a" else 1]
+	for player in players: player.touch_direction = Vector2.ZERO
+	if not mobile_blocked and social.connection.connected:
+		local.touch_direction = Vector2(float(input.get("x", 0)), float(input.get("y", 0))).limit_length()
+		for command in input.get("commands", []):
+			if command == "interact": _try_interact(local)
+			elif command == "zoom": _set_view_zoom(1.0 if area_camera.zoom.x > 1.0 else 2.0)
+			elif command == "photo": social.open("photo")
+	var title := ""
+	var distance := 80.0
+	for interaction in interactions:
+		var next: float = local.position.distance_to(interaction.position)
+		if next < distance:
+			title = interaction.title
+			distance = next
+	var state := {"ready": true, "connected": social.connection.connected, "action": title, "coins": shared_coins, "status": social.status.text}
+	JavaScriptBridge.eval("window.parent.homeMobile.state = " + JSON.stringify(state))
