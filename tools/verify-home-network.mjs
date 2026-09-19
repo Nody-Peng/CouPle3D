@@ -1,0 +1,17 @@
+import {createApp} from '../server/server.mjs';
+import {spawn} from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+const dir=fs.mkdtempSync(path.join(os.tmpdir(),'home2d-godot-'));
+const {server}=createApp({file:path.join(dir,'state.json'),accessCode:'private-test'});
+await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+const capture=process.argv.includes('--capture');
+const child=spawn(path.resolve('Godot_v4.7.2-stable_win64.exe/Godot_v4.7.2-stable_win64_console.exe'),[...(capture?[]:['--headless']),'--path','.', '--script','res://tools/verify-home-network.gd'],{stdio:'inherit',env:{...process.env,HOME_CAPTURE:capture?'1':'',HOME_TEST_URL:`http://127.0.0.1:${server.address().port}`}});
+const timeout=setTimeout(()=>child.kill(),25000);
+const code=await new Promise(resolve=>{child.on('error',()=>resolve(1));child.on('exit',code=>resolve(code??1));});
+clearTimeout(timeout);
+server.closeAllConnections();
+await new Promise(resolve=>server.close(resolve));
+if(path.dirname(dir)===path.resolve(os.tmpdir())&&path.basename(dir).startsWith('home2d-godot-'))fs.rmSync(dir,{recursive:true});
+process.exitCode=code;

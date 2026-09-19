@@ -4,8 +4,16 @@ server/data/
 export_templates/
 Godot_v4.7.2-stable_win64.exe/
 drive-download-*.zip
+assets/_incoming_zips/*
+!assets/_incoming_zips/.gitkeep
+assets/2d/
+screenshots/atlas-*.png
+screenshots/atlas-*.png.import
 
 # Large source asset packages that are not needed for the V1 web deploy.
+*.zip
+*.rar
+*.7z
 *.blend
 *.fbx
 *.gltf

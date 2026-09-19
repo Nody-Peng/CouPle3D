@@ -4,6 +4,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {Store,GameError} from './store.mjs';
+import {homeCommand,homeSnapshot} from './home2d.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 export function createApp(options={}) {
@@ -36,6 +37,10 @@ export function createApp(options={}) {
           return reply(res,200,store.snapshot(data.id));
         }
         const id=auth(req);
+        if(url.pathname==='/api/home2d') {
+          try {homeCommand(store,id,data);} catch(e) {if(e.status)throw new GameError(e.message,e.status);throw e;}
+          return reply(res,200,homeSnapshot(store,id));
+        }
         if(url.pathname==='/api/logout') {const token=cookie(req).couple_session;sessions.delete(token);res.setHeader('Set-Cookie','couple_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0');return reply(res,200,{ok:true});}
         if(!url.pathname.startsWith('/api/'))throw new GameError('找不到路徑',404);
         store.command(id,url.pathname.slice(5),data);
@@ -46,6 +51,7 @@ export function createApp(options={}) {
         return reply(res,200,session&&session.expires>=Date.now()?store.snapshot(session.id):{authenticated:false});
       }
       if(url.pathname==='/api/state')return reply(res,200,store.snapshot(auth(req)));
+      if(url.pathname==='/api/home2d')return reply(res,200,homeSnapshot(store,auth(req)));
       if(url.pathname==='/api/events') {
         const id=auth(req);res.writeHead(200,{'Content-Type':'text/event-stream','Cache-Control':'no-cache','Connection':'keep-alive'});
         const client={id,res};streams.add(client);res.write('data: '+JSON.stringify(store.snapshot(id))+'\n\n');req.on('close',()=>streams.delete(client));return;

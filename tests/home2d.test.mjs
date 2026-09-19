@@ -1,0 +1,64 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import {createApp} from '../server/server.mjs';
+import {Store} from '../server/store.mjs';
+import {homeSnapshot} from '../server/home2d.mjs';
+
+test('two authenticated clients share a persistent home, reject stale edits and duplicate rewards',async t=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'home2d-test-'));
+  const file=path.join(dir,'state.json');
+  const {server,store}=createApp({file,accessCode:'private-test'});
+  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+  t.after(async()=>{
+    server.closeAllConnections();
+    await new Promise(resolve=>server.close(resolve));
+    assert.equal(path.dirname(dir),path.resolve(os.tmpdir()));
+    assert.ok(path.basename(dir).startsWith('home2d-test-'));
+    fs.rmSync(dir,{recursive:true});
+  });
+  const base=`http://127.0.0.1:${server.address().port}`;
+  const cookies={};
+  async function request(id,endpoint,data){
+    const res=await fetch(base+endpoint,{method:data?'POST':'GET',headers:{'Content-Type':'application/json',Cookie:cookies[id]||''},body:data?JSON.stringify(data):undefined});
+    if(res.headers.get('set-cookie'))cookies[id]=res.headers.get('set-cookie').split(';')[0];
+    return {status:res.status,body:await res.json()};
+  }
+  const command=(id,data)=>request(id,'/api/home2d',data);
+  assert.equal((await request('x','/api/home2d')).status,401);
+  assert.equal((await request('x','/api/login',{id:'c',code:'private-test'})).status,401);
+  for(const id of ['a','b'])assert.equal((await request(id,'/api/login',{id,code:'private-test'})).status,200);
+  assert.equal((await command('a',{action:'note',revision:0,text:'今晚一起吃飯'})).status,200);
+  assert.equal((await request('b','/api/home2d')).body.note,'今晚一起吃飯');
+  assert.equal((await command('b',{action:'note',revision:0,text:'stale'})).status,400);
+  await command('a',{action:'chat',text:'我回來了'});
+  assert.equal((await request('b','/api/home2d')).body.messages[0].text,'我回來了');
+  await command('a',{action:'activity',id:'garden'});
+  await command('a',{action:'activity',id:'garden'});
+  assert.equal(homeSnapshot(store,'b').coins,130);
+  await Promise.all(['a','b'].map(id=>command(id,{action:'purchase',id:'flowers'})));
+  assert.equal(homeSnapshot(store,'a').coins,105);
+  assert.deepEqual(homeSnapshot(store,'a').owned,['flowers']);
+  await command('b',{action:'position',x:1200,y:450});
+  assert.equal((await request('a','/api/home2d')).body.presence.b.x,1200);
+  await command('a',{action:'invite'});
+  const invitation=homeSnapshot(store,'a').invitation.id;
+  assert.equal((await command('a',{action:'respond',id:invitation,answer:'accepted'})).status,400);
+  assert.equal((await command('b',{action:'respond',id:invitation,answer:'declined'})).status,200);
+  assert.equal(homeSnapshot(store,'a').coins,105);
+  assert.equal((await command('a',{action:'date',title:'電影',link:'javascript:alert(1)'})).status,400);
+  await command('b',{action:'diary',text:'今天有自己的家了'});
+  await command('a',{action:'question'});
+  const question=homeSnapshot(store,'a').question.id;
+  await command('a',{action:'answer',id:question,text:'一起去海邊'});
+  assert.deepEqual(homeSnapshot(store,'b').question.answers,{});
+  await command('b',{action:'answer',id:question,text:'一起吃早餐'});
+  assert.equal(homeSnapshot(store,'b').question.answers.a,'一起去海邊');
+  assert.equal((await command('a',{action:'answer',id:question,text:'改答案'})).status,400);
+  const restored=new Store(file);
+  assert.equal(homeSnapshot(restored,'a').note,'今晚一起吃飯');
+  assert.equal(homeSnapshot(restored,'a').diary.length,1);
+  assert.equal(homeSnapshot(restored,'a').coins,105);
+});
